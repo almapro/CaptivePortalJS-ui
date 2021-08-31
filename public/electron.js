@@ -1,7 +1,15 @@
-import { app, BrowserWindow } from 'electron';
-import isDev from 'electron-is-dev';
-import path from 'path';
-import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
+const path = require("path");
+
+const { app, BrowserWindow } = require("electron");
+const isDev = require("electron-is-dev");
+
+let installExtension, REACT_DEVELOPER_TOOLS; // NEW!
+
+if (isDev) {
+  const devTools = require("electron-devtools-installer");
+  installExtension = devTools.default;
+  REACT_DEVELOPER_TOOLS = devTools.REACT_DEVELOPER_TOOLS;
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require("electron-squirrel-startup")) {
@@ -19,8 +27,8 @@ const createWindow = () => {
 
   win.loadURL(
     isDev
-      ? "http://localhost:3000"
-      : `file://${path.join(__dirname, "../build/index.html")}`
+    ? "http://localhost:3000"
+    : `file://${path.join(__dirname, "../build/index.html")}`
   );
 
   // Open the DevTools.
