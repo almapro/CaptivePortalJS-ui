@@ -32,7 +32,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "concurrently -k \"BROWSER=none yarn start\" \"yarn electron\"",
-    "electron": "wait-on tcp:3000 && electron-forge start -- --no-sandbox",
+    "electron": "wait-on tcp:3000 && electron-forge start -- --no-sandbox --remote-debugging-port=9222",
     "package": "react-scripts build && electron-forge package",
     "make": "react-scripts build && electron-forge make"
   },
@@ -62,6 +62,7 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "concurrently": "^6.2.1",
+    "devtron": "^1.4.0",
     "electron-devtools-installer": "^3.2.0",
     "electron-forge": "^5.2.4",
     "electron-is-dev": "^2.0.0",
