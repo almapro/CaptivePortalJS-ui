@@ -115,40 +115,42 @@ export const LoginView = () => {
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
-              <FormControl required fullWidth variant="outlined">
-                <InputLabel htmlFor="username">Username</InputLabel>
-                <OutlinedInput
-                  inputProps={{ className: classes.input }}
-                  value={username}
-                  id="username"
-                  label="Username"
-                  onChange={e => setUsername(e.target.value)}
-                />
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl required fullWidth variant="outlined">
-                <InputLabel htmlFor="password">Password</InputLabel>
-                <OutlinedInput
-                  inputProps={{ className: classes.input }}
-                  value={password}
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  onChange={e => setPassword(e.target.value)}
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end">
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  label="Password"
-                />
-              </FormControl>
+            <Grid container item xs={12} spacing={3}>
+              <Grid item xs={6}>
+                <FormControl required fullWidth variant="outlined">
+                  <InputLabel htmlFor="username">Username</InputLabel>
+                  <OutlinedInput
+                    inputProps={{ className: classes.input }}
+                    value={username}
+                    id="username"
+                    label="Username"
+                    onChange={e => setUsername(e.target.value)}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl required fullWidth variant="outlined">
+                  <InputLabel htmlFor="password">Password</InputLabel>
+                  <OutlinedInput
+                    inputProps={{ className: classes.input }}
+                    value={password}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    onChange={e => setPassword(e.target.value)}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end">
+                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    label="Password"
+                  />
+                </FormControl>
+              </Grid>
             </Grid>
             <Grid item xs={12}>
               <FormControl required fullWidth variant="outlined">
