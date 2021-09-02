@@ -1,7 +1,7 @@
 import { HashRouter, Switch } from 'react-router-dom';
 import { DashboardView, LoginView } from './views';
 import { createContext, useEffect, useState } from 'react';
-import { Driver } from 'neo4j-driver';
+import { Driver, Session } from 'neo4j-driver';
 import { AuthRoute, RestrictedRoute } from './components';
 import { ThemeProvider } from '@emotion/react';
 import { createTheme, CssBaseline } from '@material-ui/core';
@@ -13,6 +13,8 @@ export type AppContext = {
   setConnected: (connected: boolean) => void
   driver: Driver | null,
   setDriver: (driver: Driver) => void
+  session: Session | null,
+  setSession: (session: Session) => void
 }
 
 export const appContext = createContext<AppContext>({
@@ -22,6 +24,8 @@ export const appContext = createContext<AppContext>({
   setConnected: () => {},
   driver: null,
   setDriver: () => {},
+  session: null,
+  setSession: () => {},
 });
 
 const App = () => {
@@ -30,6 +34,7 @@ const App = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
   const [connected, setConnected] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [theme, setTheme] = useState(createTheme());
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode ? '1' : '');
@@ -46,6 +51,8 @@ const App = () => {
     setConnected,
     driver,
     setDriver,
+    session,
+    setSession,
   }
   return (
     <appContext.Provider value={appContextValue}>
