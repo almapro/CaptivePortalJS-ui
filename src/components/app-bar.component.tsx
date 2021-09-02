@@ -30,7 +30,14 @@ export type AppBarProps = {
 };
 
 export const AppBarComponent = ({ title }: AppBarProps) => {
-	const { darkMode, toggleDarkMode, setConnected } = useContext(appContext);
+	const { darkMode, toggleDarkMode, setConnected, driver, setDriver, session, setSession } = useContext(appContext);
+	const logout = async () => {
+		await session?.close();
+		await driver?.close();
+		setDriver(null);
+		setSession(null);
+		setConnected(false);
+	}
 	const [open, setOpen] = useState(false);
 	const toggleOpen = (open: boolean) => (event: any) => {
 		if (
@@ -81,7 +88,7 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 					<IconButton
 						color='inherit'
 						edge='end'
-						onClick={() => setConnected(false)}>
+						onClick={() => logout()}>
 						<LogoutIcon />
 					</IconButton>
 				</Toolbar>

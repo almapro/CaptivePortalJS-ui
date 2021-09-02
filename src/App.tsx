@@ -12,9 +12,9 @@ export type AppContext = {
   connected: boolean
   setConnected: (connected: boolean) => void
   driver: Driver | null,
-  setDriver: (driver: Driver) => void
+  setDriver: (driver: Driver | null) => void
   session: Session | null,
-  setSession: (session: Session) => void
+  setSession: (session: Session | null) => void
 }
 
 export const appContext = createContext<AppContext>({
