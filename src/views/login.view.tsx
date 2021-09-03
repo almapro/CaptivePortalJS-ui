@@ -21,7 +21,7 @@ import {
 } from '@material-ui/icons';
 import { DefaultTheme, makeStyles } from '@material-ui/styles';
 import { auth, driver, Neo4jError } from 'neo4j-driver';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, FormEvent } from 'react';
 import { useTitle } from 'react-use';
 import { appContext } from '../App';
 
@@ -73,6 +73,10 @@ export const LoginView = () => {
       setTimeout(() => setError(''), 5000);
     }
   }
+  useEffect(() => {
+    const e: any = { preventDefault: () => {} };
+    handleOnSubmit(e);
+  }, [handleOnSubmit]);
   return (
     <Grid
       container
