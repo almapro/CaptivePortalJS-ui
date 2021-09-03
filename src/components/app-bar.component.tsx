@@ -59,7 +59,7 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 		[<SettingsIcon />, 'settings', 'Settings']
 	];
 	return (
-		<Box sx={{ flexGrow: 1 }}>
+		<>
 			<AppBar position="static">
 				<Toolbar>
 					<IconButton
@@ -105,8 +105,8 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 						onKeyDown={toggleOpen(false)}>
 							<List>
 		{
-				links.map(link => (
-								<ListItem button component={Link} to={`/${link[1]}`}>
+				links.map((link, idx) => (
+								<ListItem key={idx} button component={Link} to={`/${link[1]}`}>
 									<ListItemIcon>
 				{link[0]}
 									</ListItemIcon>
@@ -119,6 +119,6 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 							</List>
 					</Box>
 			</SwipeableDrawer>
-		</Box>
+		</>
 	);
 }
