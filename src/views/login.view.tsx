@@ -76,9 +76,9 @@ export const LoginView = () => {
 	const [autologin, setAutologin] = useState(true);
 	useEffect(() => {
 		if (autologin) {
+			setAutologin(false);
 			const e: any = { preventDefault: () => {} };
 			handleOnSubmit(e);
-            setAutologin(false);
 		}
 	}, [handleOnSubmit, autologin, setAutologin]);
 	return (
