@@ -64,13 +64,14 @@ export const LoginView = () => {
       const session = drv.session({ database });
       setDriver(drv);
       setSession(session);
+      setLoading(false);
       setConnected(true);
     } catch (err: any) {
       const typedError: Neo4jError = err || new Neo4jError('Invalid credentials', '403');
       setError(typedError.message);
+      setLoading(false);
       setTimeout(() => setError(''), 5000);
     }
-    setLoading(false);
   }
   return (
     <Grid
