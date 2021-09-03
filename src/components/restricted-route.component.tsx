@@ -1,13 +1,30 @@
+import { makeStyles } from "@material-ui/styles";
 import { FC, useContext } from "react";
 import { Redirect, Route, RouteProps, useLocation } from "react-router-dom";
 import { appContext } from "../App";
 import { AppBarComponent } from './app-bar.component';
 
+const useStyles = makeStyles(() => ({
+	root: {
+		display: "flex",
+		flexFlow: "column",
+		height: "100vh"
+	},
+	child: {
+		flex: '1 1 auto',
+	},
+}));
+
 export const RestrictedRoute: FC<RouteProps> = (props) => {
 	const { connected } = useContext(appContext);
+	const classes = useStyles();
 	const location = useLocation();
-	return connected ? (<>
+	return connected ? (
+	<div className={classes.root}>
 		<AppBarComponent title='Captive Portal' />
-		<Route {...props} />
-	</>) : <Redirect to={{ pathname: '/login', state: { from: location.pathname } }} />;
+		<div className={classes.child}>
+			<Route {...props} />
+		</div>
+	</div>
+	) : <Redirect to={{ pathname: '/login', state: { from: location.pathname } }} />;
 }
