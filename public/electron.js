@@ -26,6 +26,7 @@ const createWindow = () => {
   });
 
   win.setMenuBarVisibility(false);
+  win.maximize();
 
   win.loadURL(
     isDev
