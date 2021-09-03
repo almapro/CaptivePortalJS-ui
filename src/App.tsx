@@ -5,6 +5,7 @@ import { Driver, Session } from 'neo4j-driver';
 import { AuthRoute, RestrictedRoute } from './components';
 import { ThemeProvider } from '@emotion/react';
 import { createTheme, CssBaseline } from '@material-ui/core';
+import Sigma from 'sigma';
 
 export type AppContext = {
   darkMode: boolean
@@ -15,6 +16,8 @@ export type AppContext = {
   setDriver: (driver: Driver | null) => void
   session: Session | null,
   setSession: (session: Session | null) => void
+  sigma: Sigma | null,
+  setSigma: (sigma: Sigma | null) => void
 }
 
 export const appContext = createContext<AppContext>({
@@ -26,6 +29,8 @@ export const appContext = createContext<AppContext>({
   setDriver: () => {},
   session: null,
   setSession: () => {},
+  sigma: null,
+  setSigma: () => {},
 });
 
 const App = () => {
@@ -35,6 +40,7 @@ const App = () => {
   const [connected, setConnected] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [sigma, setSigma] = useState<Sigma | null>(null);
   const [theme, setTheme] = useState(createTheme());
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode ? '1' : '');
@@ -53,6 +59,8 @@ const App = () => {
     setDriver,
     session,
     setSession,
+    sigma,
+    setSigma,
   }
   return (
     <appContext.Provider value={appContextValue}>
