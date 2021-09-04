@@ -12,11 +12,11 @@ export type AppContext = {
   toggleDarkMode: () => void
   connected: boolean
   setConnected: (connected: boolean) => void
-  driver: Driver | null,
+  driver: Driver | null
   setDriver: (driver: Driver | null) => void
-  session: Session | null,
+  session: Session | null
   setSession: (session: Session | null) => void
-  sigma: Sigma | null,
+  sigma: Sigma | null
   setSigma: (sigma: Sigma | null) => void
 }
 
