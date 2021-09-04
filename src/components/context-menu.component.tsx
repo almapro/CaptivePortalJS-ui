@@ -8,10 +8,9 @@ export type ContextMenuProps = {
 	items: [string, (id: string) => void][]
 	open: boolean
 	closeMenu: () => void
-	elm: HTMLDivElement | null
 }
 
-export const ContextMenu: FC<ContextMenuProps> = ({ x, y, node, closeMenu, items, open, elm }) => {
+export const ContextMenu: FC<ContextMenuProps> = ({ x, y, node, closeMenu, items, open }) => {
 	const menuRef = createRef<HTMLDivElement>();
 	const [top, setTop] = useState(y);
 	const [left, setLeft] = useState(x);
@@ -28,9 +27,9 @@ export const ContextMenu: FC<ContextMenuProps> = ({ x, y, node, closeMenu, items
 			setTop(innerY);
 			setLeft(innerX);
 		}
-	}, [menuRef.current, x, y, setTop, setLeft, items]);
+	}, [menuRef, x, y, setTop, setLeft, items]);
 	return (
-		<Menu anchorEl={elm} anchorReference="anchorPosition" anchorPosition={{ left, top }} PaperProps={{ ref: menuRef }} keepMounted open={open && items.length > 0} onClick={() => closeMenu()}>
+		<Menu anchorReference="anchorPosition" anchorPosition={{ left, top }} PaperProps={{ ref: menuRef }} keepMounted open={open && items.length > 0} onClick={() => closeMenu()}>
 		{items.map((item, idx) => (
 			<MenuItem key={idx} onClick={() => item[1](node)}>{item[0]}</MenuItem>
 		))}
