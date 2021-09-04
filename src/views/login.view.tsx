@@ -21,7 +21,7 @@ import {
 } from '@material-ui/icons';
 import { DefaultTheme, makeStyles } from '@material-ui/styles';
 import { auth, driver, Neo4jError } from 'neo4j-driver';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
 import { appContext } from '../App';
 
@@ -73,14 +73,15 @@ export const LoginView = () => {
 			setTimeout(() => setError(''), 5000);
 		}
 	}
+	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setSession, setConnected, setError, database, url, username, password]);
 	const [autologin, setAutologin] = useState(true);
 	useEffect(() => {
 		if (autologin) {
 			setAutologin(false);
 			const e: any = { preventDefault: () => {} };
-			handleOnSubmit(e);
+			handleOnSubmitCallback(e);
 		}
-	}, [handleOnSubmit, autologin, setAutologin]);
+	}, [handleOnSubmitCallback, autologin, setAutologin]);
 	return (
 		<Grid
 			container
