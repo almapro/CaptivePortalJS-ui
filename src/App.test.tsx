@@ -1,8 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { shallow } from 'enzyme';
 import App from './App';
 
 test('renders learn react link', () => {
-  render(<App />);
-  const neo4jElements = screen.findAllByText(/neo4j/i);
-  expect(neo4jElements).toBeInTheDocument();
+  const app = shallow(<App />);
+  expect(app).toMatchSnapshot();
 });
