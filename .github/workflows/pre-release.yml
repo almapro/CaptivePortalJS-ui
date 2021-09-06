@@ -51,7 +51,7 @@ jobs:
           name: rpmArtifact
           path: out/make/*.rpm
 
-  prerelease:
+  preRelease:
     needs: build
     runs-on: ubuntu-latest
 
@@ -74,12 +74,17 @@ jobs:
           name: dmgArtifact
       - name: Collecting artifacts
         id: collecting
-        run: echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui_*.exe)"
-        run: echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui_*.deb)"
-        run: echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui_*.rpm)"
-        run: echo "::set-output name=packedFileNameDMG::$(ls captive-portal-js-ui_*.dmg)"
+        run: |
+          echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui_*.exe)"
+          echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui_*.deb)"
+          echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui_*.rpm)"
+          echo "::set-output name=packedFileNameDMG::$(ls captive-portal-js-ui_*.dmg)"
       - name: Create pre-release
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
-          files: [ ${{ steps.collecting.outputs.packedFileNameEXE }}, ${{ steps.collecting.outputs.packedFileNameDEB }}, ${{ steps.collecting.outputs.packedFileNameRPM }}, ${{ steps.collecting.outputs.packedFileNameDMG }} ]
+          files: |
+            ${{ steps.collecting.outputs.packedFileNameEXE }}
+            ${{ steps.collecting.outputs.packedFileNameDEB }}
+            ${{ steps.collecting.outputs.packedFileNameRPM }}
+            ${{ steps.collecting.outputs.packedFileNameDMG }}
