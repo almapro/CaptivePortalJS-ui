@@ -1,6 +1,7 @@
 {
   "name": "captive-portal-js-ui",
   "description": "Captive Portal JS - UI",
+  "author": "AlMA PRO",
   "version": "0.1.0",
   "license": "ISC",
   "dependencies": {
@@ -90,16 +91,13 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "Authors": "AlMA PRO",
-            "exe": "Captive Portal JS - UI ${version}.exe",
-            "name": "BUILD_NAME"
+            "Authors": "AlMA PRO"
           }
         },
         {
           "name": "@electron-forge/maker-deb",
           "config": {
             "options": {
-              "bin": "CaptivePortalJS-ui",
               "maintainer": "AlMA PRO",
               "homepage": "https://github.com/almapro/CaptivePortal-ui"
             }
