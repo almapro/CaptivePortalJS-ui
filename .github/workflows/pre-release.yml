@@ -1,0 +1,85 @@
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Pre-release
+
+on:
+  push:
+    tags:
+      - "*-beta.*"
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: yarn
+      - run: yarn make
+      - name: Upload DMG artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: dmgArtifact
+          path: out/make/*.dmg
+      - name: Upload EXE artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: exeArtifact
+          path: out/make/*.exe
+      - name: Upload DEB artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: debArtifact
+          path: out/make/*.deb
+      - name: Upload RPM artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: rpmArtifact
+          path: out/make/*.rpm
+
+  prerelease:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download EXE Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: exeArtifact
+      - name: Download DEB Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: debArtifact
+      - name: Download RPM Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: rpmArtifact
+      - name: Download DMG Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: dmgArtifact
+      - name: Collecting artifacts
+        id: collecting
+        run: echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui_*.exe)"
+        run: echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui_*.deb)"
+        run: echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui_*.rpm)"
+        run: echo "::set-output name=packedFileNameDMG::$(ls captive-portal-js-ui_*.dmg)"
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: [ ${{ steps.collecting.outputs.packedFileNameEXE }}, ${{ steps.collecting.outputs.packedFileNameDEB }}, ${{ steps.collecting.outputs.packedFileNameRPM }}, ${{ steps.collecting.outputs.packedFileNameDMG }} ]
