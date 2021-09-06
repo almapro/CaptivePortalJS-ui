@@ -33,7 +33,7 @@ jobs:
           name: dmgArtifact
           path: out/make/*.dmg
       - name: Upload EXE artifacts
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: actions/upload-artifact@v2.2.4
         with:
           name: exeArtifact
