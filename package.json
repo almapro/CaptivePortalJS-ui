@@ -90,7 +90,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "authors": "AlMA PRO",
+            "Authors": "AlMA PRO",
             "exe": "Captive Portal JS - UI ${version}.exe",
             "name": "BUILD_NAME"
           }
@@ -115,24 +115,12 @@
           }
         }
       ],
-      "make_targets": {
-        "win32": [
-          "squirrel"
-        ],
-        "darwin": [
-          "zip"
-        ],
-        "linux": [
-          "deb",
-          "rpm"
-        ]
-      },
       "electronPackagerConfig": {
         "packageManager": "yarn"
       },
       "github_repository": {
         "owner": "almapro",
-        "name": "CaptivePortal-ui"
+        "name": "CaptivePortalJS-ui"
       }
     }
   },
