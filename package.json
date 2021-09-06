@@ -91,7 +91,8 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "Authors": "AlMA PRO"
+            "Authors": "AlMA PRO",
+            "exe": "captive-portal-js-ui-${version}.exe"
           }
         },
         {
@@ -99,7 +100,7 @@
           "config": {
             "options": {
               "maintainer": "AlMA PRO",
-              "homepage": "https://github.com/almapro/CaptivePortal-ui"
+              "homepage": "https://github.com/almapro/CaptivePortalJS-ui"
             }
           }
         },
@@ -108,7 +109,7 @@
           "config": {
             "options": {
               "maintainer": "AlMA PRO",
-              "homepage": "https://github.com/almapro/CaptivePortal-ui"
+              "homepage": "https://github.com/almapro/CaptivePortalJS-ui"
             }
           }
         }
