@@ -64,6 +64,7 @@ jobs:
         uses: actions/download-artifact@v2.0.10
         with:
           name: build
+      - run: yarn
       - run: yarn electron-forge make
       - name: Upload DMG artifacts
         if: matrix.os == 'macos-latest'
