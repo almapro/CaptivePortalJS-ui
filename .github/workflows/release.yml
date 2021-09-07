@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags-ignore:
+      - "*-beta.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: yarn
+      - run: yarn build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: build
+          path: build
+      - name: Get Yarn cache folder
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-cache
+
+  make:
+
+    needs: build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+        os: [macos-latest, ubuntu-latest, windows-2022]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Get Yarn cache folder
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-cache
+      - name: Download build Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: build
+      - run: yarn
+      - run: yarn electron-forge make
+      - name: Upload ZIP artifacts (OSX)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: zipArtifact
+          path: out/**/*.zip
+      - name: Upload EXE artifacts
+        if: matrix.os == 'windows-2022'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: exeArtifact
+          path: out/**/*.exe
+      - name: Upload DEB artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: debArtifact
+          path: out/**/*.deb
+      - name: Upload RPM artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: rpmArtifact
+          path: out/**/*.rpm
+
+  release:
+    needs: make
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download EXE artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: exeArtifact
+      - name: Download DEB artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: debArtifact
+      - name: Download RPM artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: rpmArtifact
+      - name: Download ZIP artifact (OSX)
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: zipArtifact
+      - name: Collecting artifacts
+        id: collecting
+        run: |
+          echo "::set-output name=packedFileNameEXE::$(ls make/squirrel.windows/x64/captive-portal-js-ui*.exe)"
+          echo "::set-output name=packedFileNameDEB::$(ls make/captive-portal-js-ui*.deb)"
+          echo "::set-output name=packedFileNameRPM::$(ls make/captive-portal-js-ui*.rpm)"
+          echo "::set-output name=packedFileNameZIP::$(ls make/captive-portal-js-ui*.zip)"
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: false
+          files: |
+            ${{ steps.collecting.outputs.packedFileNameEXE }}
+            ${{ steps.collecting.outputs.packedFileNameDEB }}
+            ${{ steps.collecting.outputs.packedFileNameRPM }}
+            ${{ steps.collecting.outputs.packedFileNameZIP }}
