@@ -27,11 +27,15 @@ jobs:
         with:
           name: build
           path: build
-      - name: Upload node_modules artifacts
-        uses: actions/upload-artifact@v2.2.4
+      - name: Get Yarn cache folder
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Cache
+        uses: actions/cache@v2.1.6
         with:
-          name: node_modules
-          path: node_modules
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-cache
+
   make:
 
     needs: build
@@ -48,10 +52,14 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Download node_modules Artifact
-        uses: actions/download-artifact@v2.0.10
+      - name: Get Yarn cache folder
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Cache
+        uses: actions/cache@v2.1.6
         with:
-          name: node_modules
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-cache
       - name: Download build Artifact
         uses: actions/download-artifact@v2.0.10
         with:
