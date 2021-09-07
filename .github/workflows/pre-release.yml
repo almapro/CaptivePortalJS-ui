@@ -115,11 +115,10 @@ jobs:
       - name: Collecting artifacts
         id: collecting
         run: |
-          ls -RlAsh make/*
-          echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui-*/captive-portal-js-ui.exe)"
-          echo "::set-output name=packedFileNameDEB::$(ls make/captive-portal-js-ui_*.deb)"
-          echo "::set-output name=packedFileNameRPM::$(ls make/captive-portal-js-ui-*.rpm)"
-          echo "::set-output name=packedFileNameZIP::$(ls make/captive-portal-js-ui-*.zip)"
+          echo "::set-output name=packedFileNameEXE::$(ls make/squirrel.windows/x64/captive-portal-js-ui*.exe)"
+          echo "::set-output name=packedFileNameDEB::$(ls make/captive-portal-js-ui*.deb)"
+          echo "::set-output name=packedFileNameRPM::$(ls make/captive-portal-js-ui*.rpm)"
+          echo "::set-output name=packedFileNameZIP::$(ls make/captive-portal-js-ui*.zip)"
       - name: Create pre-release
         uses: softprops/action-gh-release@v1
         with:
