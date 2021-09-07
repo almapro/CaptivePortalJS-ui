@@ -1,6 +1,3 @@
-# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: Pre-release
 
 on:
@@ -60,17 +57,17 @@ jobs:
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: yarn-cache
-      - name: Download build Artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v2.0.10
         with:
           name: build
       - run: yarn
       - run: yarn electron-forge make
-      - name: Upload DMG artifacts
+      - name: Upload ZIP artifacts (OSX)
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: dmgArtifact
+          name: zipArtifact
           path: out/**/*.zip
       - name: Upload EXE artifacts
         if: matrix.os == 'windows-2022'
@@ -96,22 +93,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download EXE Artifact
+      - name: Download EXE artifact
         uses: actions/download-artifact@v2.0.10
         with:
           name: exeArtifact
-      - name: Download DEB Artifact
+      - name: Download DEB artifact
         uses: actions/download-artifact@v2.0.10
         with:
           name: debArtifact
-      - name: Download RPM Artifact
+      - name: Download RPM artifact
         uses: actions/download-artifact@v2.0.10
         with:
           name: rpmArtifact
-      - name: Download DMG Artifact
+      - name: Download ZIP artifact (OSX)
         uses: actions/download-artifact@v2.0.10
         with:
-          name: dmgArtifact
+          name: zipArtifact
       - name: Collecting artifacts
         id: collecting
         run: |
