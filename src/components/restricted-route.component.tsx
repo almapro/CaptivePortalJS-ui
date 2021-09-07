@@ -21,7 +21,7 @@ export const RestrictedRoute: FC<RouteProps> = (props) => {
 	const location = useLocation();
 	return connected ? (
 	<div className={classes.root}>
-		<AppBarComponent title='Captive Portal' />
+		<AppBarComponent title='Captive Portal JS' />
 		<div className={classes.child}>
 			<Route {...props} />
 		</div>
