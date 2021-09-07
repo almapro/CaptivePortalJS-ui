@@ -32,25 +32,25 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           name: dmgArtifact
-          path: out/**.dmg
+          path: out/**/*.dmg
       - name: Upload EXE artifacts
         if: matrix.os == 'windows-2022'
         uses: actions/upload-artifact@v2.2.4
         with:
           name: exeArtifact
-          path: out/**.exe
+          path: out/**/*.exe
       - name: Upload DEB artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v2.2.4
         with:
           name: debArtifact
-          path: out/**.deb
+          path: out/**/*.deb
       - name: Upload RPM artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v2.2.4
         with:
           name: rpmArtifact
-          path: out/**.rpm
+          path: out/**/*.rpm
 
   preRelease:
     needs: build
