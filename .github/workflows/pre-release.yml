@@ -98,6 +98,8 @@ jobs:
       - name: Collecting artifacts
         id: collecting
         run: |
+          ls *
+          ls out/
           echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui-*.exe)"
           echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui-*.deb)"
           echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui-*.rpm)"
