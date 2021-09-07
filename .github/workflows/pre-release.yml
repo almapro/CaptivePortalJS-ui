@@ -27,6 +27,15 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: yarn
       - run: yarn make
+      - name: Debug output folder (OSX)
+        if: matrix.os == 'macos-latest'
+        run: ls -lashR
+      - name: Debug output folder (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: ls -lashR
+      - name: Debug output folder (Windows)
+        if: matrix.os == 'windows-2022'
+        run: dir /a-D /S /B
       - name: Upload DMG artifacts
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v2.2.4
