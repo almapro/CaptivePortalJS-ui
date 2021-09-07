@@ -13,7 +13,7 @@ import {
 	WbSunny as WbSunnyIcon,
 	Bedtime as BedtimeIcon,
 	Devices as DevicesIcon,
-	Logout as LogoutIcon,
+	PowerOff as PowerOffIcon,
 	Settings as SettingsIcon,
 	Wifi as WifiIcon,
 	VpnKey as CredentialsIcon,
@@ -31,7 +31,7 @@ export type AppBarProps = {
 
 export const AppBarComponent = ({ title }: AppBarProps) => {
 	const { darkMode, toggleDarkMode, setConnected, driver, setDriver, session, setSession } = useContext(appContext);
-	const logout = async () => {
+	const disconnect = async () => {
 		await session?.close();
 		await driver?.close();
 		setDriver(null);
@@ -88,8 +88,8 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 					<IconButton
 						color='inherit'
 						edge='end'
-						onClick={() => logout()}>
-						<LogoutIcon />
+						onClick={() => disconnect()}>
+						<PowerOffIcon />
 					</IconButton>
 				</Toolbar>
 			</AppBar>
