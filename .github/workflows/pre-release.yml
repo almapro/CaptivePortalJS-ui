@@ -25,7 +25,11 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn
-      - run: yarn make
+      - name: Download build Artifact
+        uses: actions/download-artifact@v2.0.10
+        with:
+          name: build
+      - run: yarn electron-forge make
       - name: Upload DMG artifacts
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v2.2.4
@@ -75,10 +79,10 @@ jobs:
       - name: Collecting artifacts
         id: collecting
         run: |
-          echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui_*.exe)"
-          echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui_*.deb)"
-          echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui_*.rpm)"
-          echo "::set-output name=packedFileNameZIP::$(ls captive-portal-js-ui_*.zip)"
+          echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui-*.exe)"
+          echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui-*.deb)"
+          echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui-*.rpm)"
+          echo "::set-output name=packedFileNameZIP::$(ls captive-portal-js-ui-*.zip)"
       - name: Create pre-release
         uses: softprops/action-gh-release@v1
         with:
