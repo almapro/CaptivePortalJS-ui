@@ -29,6 +29,7 @@ jobs:
           path: build
   make:
 
+    needs: build
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -74,7 +75,7 @@ jobs:
           path: out/**/*.rpm
 
   preRelease:
-    needs: build
+    needs: make
     runs-on: ubuntu-latest
 
     steps:
