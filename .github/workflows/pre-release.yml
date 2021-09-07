@@ -115,9 +115,9 @@ jobs:
       - name: Collecting artifacts
         id: collecting
         run: |
-          ls make/*
+          ls -RlAsh make/*
           echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui-*/captive-portal-js-ui.exe)"
-          echo "::set-output name=packedFileNameDEB::$(ls make/captive-portal-js-ui-*.deb)"
+          echo "::set-output name=packedFileNameDEB::$(ls make/captive-portal-js-ui_*.deb)"
           echo "::set-output name=packedFileNameRPM::$(ls make/captive-portal-js-ui-*.rpm)"
           echo "::set-output name=packedFileNameZIP::$(ls make/captive-portal-js-ui-*.zip)"
       - name: Create pre-release
