@@ -26,21 +26,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: yarn
       - run: yarn make
-      - name: Debug output folder (OSX)
-        if: matrix.os == 'macos-latest'
-        run: ls -lashR
-      - name: Debug output folder (linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: ls -lashR
-      - name: Debug output folder (Windows)
-        if: matrix.os == 'windows-2022'
-        run: dir /a-D /S /B
       - name: Upload DMG artifacts
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v2.2.4
         with:
           name: dmgArtifact
-          path: out/**/*.dmg
+          path: out/**/*.zip
       - name: Upload EXE artifacts
         if: matrix.os == 'windows-2022'
         uses: actions/upload-artifact@v2.2.4
@@ -87,7 +78,7 @@ jobs:
           echo "::set-output name=packedFileNameEXE::$(ls captive-portal-js-ui_*.exe)"
           echo "::set-output name=packedFileNameDEB::$(ls captive-portal-js-ui_*.deb)"
           echo "::set-output name=packedFileNameRPM::$(ls captive-portal-js-ui_*.rpm)"
-          echo "::set-output name=packedFileNameDMG::$(ls captive-portal-js-ui_*.dmg)"
+          echo "::set-output name=packedFileNameZIP::$(ls captive-portal-js-ui_*.zip)"
       - name: Create pre-release
         uses: softprops/action-gh-release@v1
         with:
@@ -96,4 +87,4 @@ jobs:
             ${{ steps.collecting.outputs.packedFileNameEXE }}
             ${{ steps.collecting.outputs.packedFileNameDEB }}
             ${{ steps.collecting.outputs.packedFileNameRPM }}
-            ${{ steps.collecting.outputs.packedFileNameDMG }}
+            ${{ steps.collecting.outputs.packedFileNameZIP }}
