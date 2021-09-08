@@ -30,12 +30,14 @@ export type AppBarProps = {
 };
 
 export const AppBarComponent = ({ title }: AppBarProps) => {
-	const { darkMode, toggleDarkMode, setConnected, driver, setDriver, session, setSession } = useContext(appContext);
+const { darkMode, toggleDarkMode, setConnected, driver, setDriver, session, setSession, sigma, setSigma } = useContext(appContext);
 	const disconnect = async () => {
 		await session?.close();
 		await driver?.close();
+		sigma?.kill();
 		setDriver(null);
 		setSession(null);
+		setSigma(null);
 		setConnected(false);
 	}
 	const [open, setOpen] = useState(false);
