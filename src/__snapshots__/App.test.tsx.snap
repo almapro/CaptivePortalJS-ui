@@ -6,9 +6,11 @@ exports[`renders learn react link 1`] = `
     Object {
       "autologin": true,
       "connected": false,
+      "createDatabaseIndexes": [Function],
       "darkMode": false,
       "database": "",
       "driver": null,
+      "dropDatabaseIndexes": [Function],
       "setAutologin": [Function],
       "setConnected": [Function],
       "setDatabase": [Function],
