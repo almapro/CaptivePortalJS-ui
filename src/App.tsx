@@ -1,7 +1,7 @@
 import { HashRouter, Switch } from 'react-router-dom';
 import { DashboardView, LoginView } from './views';
 import { createContext, useEffect, useState } from 'react';
-import { Driver, Session } from 'neo4j-driver';
+import { Driver } from 'neo4j-driver';
 import { AuthRoute, RestrictedRoute } from './components';
 import { ThemeProvider } from '@emotion/react';
 import { createTheme, CssBaseline, Theme } from '@material-ui/core';
