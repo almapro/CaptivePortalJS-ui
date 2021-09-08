@@ -4,7 +4,7 @@ import { createContext, useEffect, useState } from 'react';
 import { Driver, Session } from 'neo4j-driver';
 import { AuthRoute, RestrictedRoute } from './components';
 import { ThemeProvider } from '@emotion/react';
-import { createTheme, CssBaseline } from '@material-ui/core';
+import { createTheme, CssBaseline, Theme } from '@material-ui/core';
 import Sigma from 'sigma';
 
 export type AppContext = {
@@ -18,6 +18,9 @@ export type AppContext = {
   setSession: (session: Session | null) => void
   sigma: Sigma | null
   setSigma: (sigma: Sigma | null) => void
+  theme: Theme,
+  autologin: boolean,
+  setAutologin: (autoLogin: boolean) => void,
 }
 
 export const appContext = createContext<AppContext>({
@@ -31,6 +34,19 @@ export const appContext = createContext<AppContext>({
   setSession: () => {},
   sigma: null,
   setSigma: () => {},
+  theme: createTheme({
+    palette: {
+      primary: {
+        main: '#85559F',
+      },
+      secondary: {
+        main: '#3F294D',
+      },
+      mode: 'light',
+    }
+  }),
+  autologin: true,
+  setAutologin: () => {},
 });
 
 const App = () => {
@@ -41,11 +57,28 @@ const App = () => {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [sigma, setSigma] = useState<Sigma | null>(null);
-  const [theme, setTheme] = useState(createTheme());
+  const [theme, setTheme] = useState(createTheme({
+    palette: {
+      primary: {
+        main: '#85559F',
+      },
+      secondary: {
+        main: '#3F294D',
+      },
+      mode: darkMode ? 'dark' : 'light',
+    }
+  }));
+  const [autologin, setAutologin] = useState(true);
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode ? '1' : '');
     setTheme(createTheme({
       palette: {
+        primary: {
+          main: '#85559F',
+        },
+        secondary: {
+          main: '#3F294D',
+        },
         mode: darkMode ? 'dark' : 'light',
       }
     }));
@@ -61,6 +94,9 @@ const App = () => {
     setSession,
     sigma,
     setSigma,
+    theme,
+    autologin,
+    setAutologin,
   }
   return (
     <appContext.Provider value={appContextValue}>
