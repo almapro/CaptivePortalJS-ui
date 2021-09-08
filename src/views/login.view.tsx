@@ -33,7 +33,7 @@ const useStyles = makeStyles<DefaultTheme, { mode: 'dark' | 'light' }>({
 
 export const LoginView = () => {
 	useTitle('Login - Captive Portal JS');
-	const { darkMode, toggleDarkMode, setConnected, setDriver, setSession } = useContext(appContext);
+	const { darkMode, toggleDarkMode, setConnected, setDriver, setSession, autologin, setAutologin } = useContext(appContext);
 	const [localUrl, localUsername, localPassword, localDatabase] = [localStorage.getItem('neo4j_url'), localStorage.getItem('neo4j_username'), localStorage.getItem('neo4j_password'), localStorage.getItem('neo4j_database')]
 	const [url, setUrl] = useState(!!localUrl ? localUrl : 'neo4j://localhost:7687');
 	const [username, setUsername] = useState(!!localUsername ? localUsername : 'neo4j');
@@ -74,7 +74,6 @@ export const LoginView = () => {
 		}
 	}
 	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setSession, setConnected, setError, database, url, username, password]);
-	const [autologin, setAutologin] = useState(true);
 	useEffect(() => {
 		if (autologin) {
 			setAutologin(false);
