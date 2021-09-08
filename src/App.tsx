@@ -14,8 +14,8 @@ export type AppContext = {
   setConnected: (connected: boolean) => void
   driver: Driver | null
   setDriver: (driver: Driver | null) => void
-  session: Session | null
-  setSession: (session: Session | null) => void
+  database: string,
+  setDatabase: (database: string) => void,
   sigma: Sigma | null
   setSigma: (sigma: Sigma | null) => void
   theme: Theme,
@@ -30,8 +30,8 @@ export const appContext = createContext<AppContext>({
   setConnected: () => {},
   driver: null,
   setDriver: () => {},
-  session: null,
-  setSession: () => {},
+  database: '',
+  setDatabase: () => {},
   sigma: null,
   setSigma: () => {},
   theme: createTheme({
@@ -55,7 +55,7 @@ const App = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
   const [connected, setConnected] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [database, setDatabase] = useState('');
   const [sigma, setSigma] = useState<Sigma | null>(null);
   const [theme, setTheme] = useState(createTheme({
     palette: {
@@ -90,8 +90,8 @@ const App = () => {
     setConnected,
     driver,
     setDriver,
-    session,
-    setSession,
+    database,
+    setDatabase,
     sigma,
     setSigma,
     theme,

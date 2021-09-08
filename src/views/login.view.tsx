@@ -33,12 +33,12 @@ const useStyles = makeStyles<DefaultTheme, { mode: 'dark' | 'light' }>({
 
 export const LoginView = () => {
 	useTitle('Login - Captive Portal JS');
-	const { darkMode, toggleDarkMode, setConnected, setDriver, setSession, autologin, setAutologin } = useContext(appContext);
+	const { darkMode, toggleDarkMode, setConnected, setDriver, setDatabase, autologin, setAutologin } = useContext(appContext);
 	const [localUrl, localUsername, localPassword, localDatabase] = [localStorage.getItem('neo4j_url'), localStorage.getItem('neo4j_username'), localStorage.getItem('neo4j_password'), localStorage.getItem('neo4j_database')]
 	const [url, setUrl] = useState(!!localUrl ? localUrl : 'neo4j://localhost:7687');
 	const [username, setUsername] = useState(!!localUsername ? localUsername : 'neo4j');
 	const [password, setPassword] = useState(!!localPassword ? localPassword : '');
-	const [database, setDatabase] = useState(!!localDatabase ? localDatabase : 'neo4j');
+	const [database, setLocalDatabase] = useState(!!localDatabase ? localDatabase : 'neo4j');
 	const [error, setError] = useState('');
 	useEffect(() => {
 		localStorage.setItem('neo4j_url', url);
@@ -61,9 +61,8 @@ export const LoginView = () => {
 		try {
 			const drv = driver(url, auth.basic(username, password));
 			await drv.verifyConnectivity({ database });
-			const session = drv.session({ database });
+			setDatabase(database);
 			setDriver(drv);
-			setSession(session);
 			setLoading(false);
 			setConnected(true);
 		} catch (err: any) {
@@ -73,7 +72,7 @@ export const LoginView = () => {
 			setTimeout(() => setError(''), 5000);
 		}
 	}
-	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setSession, setConnected, setError, database, url, username, password]);
+	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setConnected, setError, database, url, username, password]);
 	useEffect(() => {
 		if (autologin) {
 			setAutologin(false);
@@ -169,7 +168,7 @@ export const LoginView = () => {
 									value={database}
 									id="database"
 									label="Database"
-									onChange={e => setDatabase(e.target.value)}
+									onChange={e => setLocalDatabase(e.target.value)}
 								/>
 							</FormControl>
 						</Grid>
