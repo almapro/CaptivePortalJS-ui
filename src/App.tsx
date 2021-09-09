@@ -102,38 +102,42 @@ const App = () => {
     autologin,
     setAutologin,
     createDatabaseIndexes: async (session: Session) => {
-      const txc = session.beginTransaction();
-      await txc.run('CREATE INDEX router_ip IF NOT EXISTS FOR (n:Router) ON (n.ip)');
-      await txc.run('CREATE INDEX router_mac IF NOT EXISTS FOR (n:Router) ON (n.mac)');
-      await txc.run('CREATE INDEX wifi_essid IF NOT EXISTS FOR (n:Wifi) ON (n.essid)');
-      await txc.run('CREATE INDEX wifi_bssid IF NOT EXISTS FOR (n:Wifi) ON (n.bssid)');
-      await txc.run('CREATE INDEX client_ip IF NOT EXISTS FOR (n:Client) ON (n.ip)');
-      await txc.run('CREATE INDEX client_mac IF NOT EXISTS FOR (n:Client) ON (n.mac)');
-      await txc.run('CREATE INDEX hotspot_essid IF NOT EXISTS FOR (n:Hotspot) ON (n.essid)');
-      await txc.run('CREATE INDEX hotspot_bssid IF NOT EXISTS FOR (n:Hotspot) ON (n.bssid)');
-      await txc.run('CREATE INDEX network_subnet IF NOT EXISTS FOR (n:Network) ON (n.subnet)');
-      await txc.run('CREATE INDEX network_gateway IF NOT EXISTS FOR (n:Network) ON (n.gateway)');
-      await txc.run('CREATE INDEX service_port IF NOT EXISTS FOR (n:Service) ON (n.port)');
-      await txc.run('CREATE INDEX service_protocol IF NOT EXISTS FOR (n:Service) ON (n.protocol)');
-      await txc.commit();
-      await session.close();
+      try {
+        const txc = session.beginTransaction();
+        await txc.run('CREATE INDEX router_ip IF NOT EXISTS FOR (n:Router) ON (n.ip)');
+        await txc.run('CREATE INDEX router_mac IF NOT EXISTS FOR (n:Router) ON (n.mac)');
+        await txc.run('CREATE INDEX wifi_essid IF NOT EXISTS FOR (n:Wifi) ON (n.essid)');
+        await txc.run('CREATE INDEX wifi_bssid IF NOT EXISTS FOR (n:Wifi) ON (n.bssid)');
+        await txc.run('CREATE INDEX client_ip IF NOT EXISTS FOR (n:Client) ON (n.ip)');
+        await txc.run('CREATE INDEX client_mac IF NOT EXISTS FOR (n:Client) ON (n.mac)');
+        await txc.run('CREATE INDEX hotspot_essid IF NOT EXISTS FOR (n:Hotspot) ON (n.essid)');
+        await txc.run('CREATE INDEX hotspot_bssid IF NOT EXISTS FOR (n:Hotspot) ON (n.bssid)');
+        await txc.run('CREATE INDEX network_subnet IF NOT EXISTS FOR (n:Network) ON (n.subnet)');
+        await txc.run('CREATE INDEX network_gateway IF NOT EXISTS FOR (n:Network) ON (n.gateway)');
+        await txc.run('CREATE INDEX service_port IF NOT EXISTS FOR (n:Service) ON (n.port)');
+        await txc.run('CREATE INDEX service_protocol IF NOT EXISTS FOR (n:Service) ON (n.protocol)');
+        await txc.commit();
+        await session.close();
+      } catch(__) {}
     },
     dropDatabaseIndexes: async (session: Session) => {
-      const txc = session.beginTransaction();
-      await txc.run('DROP INDEX router_ip IF EXISTS');
-      await txc.run('DROP INDEX router_mac IF EXISTS');
-      await txc.run('DROP INDEX wifi_essid IF EXISTS');
-      await txc.run('DROP INDEX wifi_bssid IF EXISTS');
-      await txc.run('DROP INDEX client_ip IF EXISTS');
-      await txc.run('DROP INDEX client_mac IF EXISTS');
-      await txc.run('DROP INDEX hotspot_essid IF EXISTS');
-      await txc.run('DROP INDEX hotspot_bssid IF EXISTS');
-      await txc.run('DROP INDEX network_subnet IF EXISTS');
-      await txc.run('DROP INDEX network_gateway IF EXISTS');
-      await txc.run('DROP INDEX service_port IF EXISTS');
-      await txc.run('DROP INDEX service_protocol IF EXISTS');
-      await txc.commit();
-      await session.close();
+      try {
+        const txc = session.beginTransaction();
+        await txc.run('DROP INDEX router_ip IF EXISTS');
+        await txc.run('DROP INDEX router_mac IF EXISTS');
+        await txc.run('DROP INDEX wifi_essid IF EXISTS');
+        await txc.run('DROP INDEX wifi_bssid IF EXISTS');
+        await txc.run('DROP INDEX client_ip IF EXISTS');
+        await txc.run('DROP INDEX client_mac IF EXISTS');
+        await txc.run('DROP INDEX hotspot_essid IF EXISTS');
+        await txc.run('DROP INDEX hotspot_bssid IF EXISTS');
+        await txc.run('DROP INDEX network_subnet IF EXISTS');
+        await txc.run('DROP INDEX network_gateway IF EXISTS');
+        await txc.run('DROP INDEX service_port IF EXISTS');
+        await txc.run('DROP INDEX service_protocol IF EXISTS');
+        await txc.commit();
+        await session.close();
+      } catch(__) {}
     },
   }
   return (
