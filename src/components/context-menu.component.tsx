@@ -1,4 +1,4 @@
-import { ListItemIcon, ListItemText, Menu, MenuItem } from "@material-ui/core"
+import { ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material"
 import { createRef, FC, useEffect, useState } from "react"
 
 export type ContextMenuProps = {
