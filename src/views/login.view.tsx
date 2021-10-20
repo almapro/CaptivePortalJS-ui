@@ -12,14 +12,14 @@ import {
 	Alert,
 	Collapse,
 	CircularProgress,
-} from '@material-ui/core';
+} from '@mui/material';
 import {
 	WbSunny as WbSunnyIcon,
 	Bedtime as BedtimeIcon,
-		VisibilityOff as VisibilityOffIcon,
-		Visibility as VisibilityIcon,
-} from '@material-ui/icons';
-import { DefaultTheme, makeStyles } from '@material-ui/styles';
+	VisibilityOff as VisibilityOffIcon,
+	Visibility as VisibilityIcon,
+} from '@mui/icons-material';
+import { DefaultTheme, makeStyles } from '@mui/styles';
 import { auth, driver, Neo4jError } from 'neo4j-driver';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
@@ -33,11 +33,11 @@ const useStyles = makeStyles<DefaultTheme, { mode: 'dark' | 'light' }>({
 
 export const LoginView = () => {
 	useTitle('Login - Captive Portal JS');
-	const { darkMode, toggleDarkMode, setConnected, setDriver, setDatabase, autologin, setAutologin } = useContext(appContext);
+	const { darkMode, toggleDarkMode, setConnected, setDriver, setDatabase, setUsername, setPassword, setUrl, autologin, setAutologin } = useContext(appContext);
 	const [localUrl, localUsername, localPassword, localDatabase] = [localStorage.getItem('neo4j_url'), localStorage.getItem('neo4j_username'), localStorage.getItem('neo4j_password'), localStorage.getItem('neo4j_database')]
-	const [url, setUrl] = useState(!!localUrl ? localUrl : 'neo4j://localhost:7687');
-	const [username, setUsername] = useState(!!localUsername ? localUsername : 'neo4j');
-	const [password, setPassword] = useState(!!localPassword ? localPassword : '');
+	const [url, setLocalUrl] = useState(!!localUrl ? localUrl : 'neo4j://localhost:7687');
+	const [username, setLocalUsername] = useState(!!localUsername ? localUsername : 'neo4j');
+	const [password, setLocalPassword] = useState(!!localPassword ? localPassword : '');
 	const [database, setLocalDatabase] = useState(!!localDatabase ? localDatabase : 'neo4j');
 	const [error, setError] = useState('');
 	useEffect(() => {
@@ -62,6 +62,9 @@ export const LoginView = () => {
 			const drv = driver(url, auth.basic(username, password));
 			await drv.verifyConnectivity({ database });
 			setDatabase(database);
+			setUsername(username);
+			setPassword(password);
+			setUrl(url);
 			setDriver(drv);
 			setLoading(false);
 			setConnected(true);
@@ -72,7 +75,7 @@ export const LoginView = () => {
 			setTimeout(() => setError(''), 5000);
 		}
 	}
-	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setConnected, setError, database, url, username, password]);
+	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setConnected, setError, database, setDatabase, url, username, password]);
 	useEffect(() => {
 		if (autologin) {
 			setAutologin(false);
@@ -119,7 +122,7 @@ export const LoginView = () => {
 									value={url}
 									id="url"
 									label="Neo4j URL"
-									onChange={e => setUrl(e.target.value)}
+									onChange={e => setLocalUrl(e.target.value)}
 								/>
 							</FormControl>
 						</Grid>
@@ -132,7 +135,7 @@ export const LoginView = () => {
 										value={username}
 										id="username"
 										label="Username"
-										onChange={e => setUsername(e.target.value)}
+										onChange={e => setLocalUsername(e.target.value)}
 									/>
 								</FormControl>
 							</Grid>
@@ -144,7 +147,7 @@ export const LoginView = () => {
 										value={password}
 										id="password"
 										type={showPassword ? 'text' : 'password'}
-										onChange={e => setPassword(e.target.value)}
+										onChange={e => setLocalPassword(e.target.value)}
 										endAdornment={
 											<InputAdornment position="end">
 												<IconButton
