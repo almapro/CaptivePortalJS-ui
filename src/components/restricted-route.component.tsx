@@ -1,4 +1,4 @@
-import { makeStyles } from "@material-ui/styles";
+import { makeStyles } from "@mui/styles";
 import { FC, useContext } from "react";
 import { Redirect, Route, RouteProps, useLocation } from "react-router-dom";
 import { appContext } from "../App";
