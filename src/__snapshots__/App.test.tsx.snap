@@ -6,16 +6,20 @@ exports[`renders learn react link 1`] = `
     Object {
       "autologin": true,
       "connected": false,
-      "createDatabaseIndexes": [Function],
+      "createDatabaseIndexesAndConstraints": [Function],
       "darkMode": false,
       "database": "",
       "driver": null,
-      "dropDatabaseIndexes": [Function],
+      "dropDatabaseIndexesAndConstraints": [Function],
+      "password": "",
       "setAutologin": [Function],
       "setConnected": [Function],
       "setDatabase": [Function],
       "setDriver": [Function],
+      "setPassword": [Function],
       "setSigma": [Function],
+      "setUrl": [Function],
+      "setUsername": [Function],
       "sigma": null,
       "theme": Object {
         "breakpoints": Object {
@@ -302,6 +306,8 @@ exports[`renders learn react link 1`] = `
         },
       },
       "toggleDarkMode": [Function],
+      "url": "",
+      "username": "",
     }
   }
 >
@@ -594,24 +600,30 @@ exports[`renders learn react link 1`] = `
     }
   >
     <CssBaseline>
-      <HashRouter
-        basename="/"
+      <SnackbarProvider
+        maxSnack={3}
       >
-        <Switch>
-          <RestrictedRoute
-            exact={true}
-            path="/"
-          >
-            <DashboardView />
-          </RestrictedRoute>
-          <AuthRoute
-            exact={true}
-            path="/login"
-          >
-            <LoginView />
-          </AuthRoute>
-        </Switch>
-      </HashRouter>
+        <HashRouter
+          basename="/"
+        >
+          <Switch>
+            <RestrictedRoute
+              exact={true}
+              path="/"
+            >
+              <Component>
+                <DashboardView />
+              </Component>
+            </RestrictedRoute>
+            <AuthRoute
+              exact={true}
+              path="/login"
+            >
+              <LoginView />
+            </AuthRoute>
+          </Switch>
+        </HashRouter>
+      </SnackbarProvider>
     </CssBaseline>
   </ThemeProvider>
 </ContextProvider>
