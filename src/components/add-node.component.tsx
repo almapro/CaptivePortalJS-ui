@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { FC, useContext, useState } from "react";
 import { appContext } from "../App";
-import { useAddWifiNode } from "./add-node-components";
+import { useAddBuildingNode, useAddWifiNode } from "./add-node-components";
 import _ from "lodash";
 
 export type AddNodeProps = {
@@ -22,6 +22,11 @@ export type AddNodeProps = {
 export type FileOperationType = 'UPLOAD' | 'DOWNLOAD' | 'DELETE';
 
 export type NodeType = 'WIFI' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'FLOOR';
+
+export type WithHintComponent = {
+	setHint: (hint: string) => void
+	defaultHint: string
+}
 
 export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent }) => {
 	const { theme } = useContext(appContext);
@@ -69,10 +74,14 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		handleClose();
 	}
 	const [callAddWifiNodeSubmit, AddWifiNode] = useAddWifiNode({ onDone });
+	const [callAddBuildingNodeSubmit, AddBuildingNode] = useAddBuildingNode({ onDone, setHint, defaultHint });
 	const handleOnClick = () => {
 		switch(nodeType) {
 			case 'WIFI':
 				callAddWifiNodeSubmit();
+				break;
+			case 'BUILDING':
+				callAddBuildingNodeSubmit();
 				break;
 			default:
 				break;
@@ -107,13 +116,14 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 					{nodeType !== null && <Divider variant='middle' className={classes.divider} />}
 					<Grid item container spacing={1}>
 						{nodeType === 'WIFI' && AddWifiNode}
+						{nodeType === 'BUILDING' && AddBuildingNode}
 					</Grid>
 				</Grid>
 			</DialogContent>
 			<DialogActions style={{ padding: theme.spacing(3) }}>
 				<Grid style={{ flexGrow: 1, fontSize: 11, fontStyle: 'italic' }}>{hint}</Grid>
-				<Button color='inherit' onClick={handleClose}>Cancel</Button>
-				<Button variant='contained' color='primary' onClick={handleOnClick}>Add</Button>
+				{nodeType !== null && <Button color='inherit' onClick={handleClose}>Cancel</Button>}
+				{nodeType !== null && <Button variant='contained' color='primary' onClick={handleOnClick}>Add</Button>}
 			</DialogActions>
 		</Dialog>
 	)
