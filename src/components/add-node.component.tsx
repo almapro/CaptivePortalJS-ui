@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { FC, useContext, useState } from "react";
 import { appContext } from "../App";
-import { useAddBuildingNode, useAddWifiNode, useAddHotspotNode } from "./add-node-components";
+import { useAddBuildingNode, useAddWifiNode, useAddHotspotNode, useAddRouterNode } from "./add-node-components";
 import _ from "lodash";
 
 export type AddNodeProps = {
@@ -74,6 +74,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 	const [callAddWifiNodeSubmit, AddWifiNode] = useAddWifiNode({ onDone });
 	const [callAddBuildingNodeSubmit, AddBuildingNode] = useAddBuildingNode({ onDone, setHint, defaultHint });
 	const [callAddHotspotNodeSubmit, AddHotspotNode] = useAddHotspotNode({ onDone });
+	const [callAddRouterNodeSubmit, AddRouterNode] = useAddRouterNode({ onDone });
 	const handleOnClick = () => {
 		switch(nodeType) {
 			case 'WIFI':
@@ -84,6 +85,9 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 				break;
 			case 'HOTSPOT':
 				callAddHotspotNodeSubmit();
+				break;
+			case 'ROUTER':
+				callAddRouterNodeSubmit();
 				break;
 			default:
 				break;
@@ -120,6 +124,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 						{nodeType === 'WIFI' && AddWifiNode}
 						{nodeType === 'BUILDING' && AddBuildingNode}
 						{nodeType === 'HOTSPOT' && AddHotspotNode}
+						{nodeType === 'ROUTER' && AddRouterNode}
 					</Grid>
 				</Grid>
 			</DialogContent>
