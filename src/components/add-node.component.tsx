@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { FC, useContext, useState } from "react";
 import { appContext } from "../App";
-import { useAddBuildingNode, useAddWifiNode } from "./add-node-components";
+import { useAddBuildingNode, useAddWifiNode, useAddHotspotNode } from "./add-node-components";
 import _ from "lodash";
 
 export type AddNodeProps = {
@@ -60,8 +60,6 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		[<WifiIcon />, 'Wifi', 'WIFI', 'A wifi access point'],
 		[<WifiTetheringIcon />, 'Hotspot', 'HOTSPOT', 'An internet sharing hotspot'],
 		[<RouterIcon />, 'Router', 'ROUTER', 'A gateway for a wifi or a hotspot'],
-		[<DevicesIcon />, 'Client', 'CLIENT', 'A client that connects to wifi, hotspot or router'],
-		[<StorageIcon />, 'Server', 'SERVER', 'A device that provides a service such as ssh, dns, http, etc...'],
 	];
 	const defaultHint = 'Hover over choices to get a hint';
 	const [hint, setHint] = useState(defaultHint);
@@ -75,6 +73,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 	}
 	const [callAddWifiNodeSubmit, AddWifiNode] = useAddWifiNode({ onDone });
 	const [callAddBuildingNodeSubmit, AddBuildingNode] = useAddBuildingNode({ onDone, setHint, defaultHint });
+	const [callAddHotspotNodeSubmit, AddHotspotNode] = useAddHotspotNode({ onDone });
 	const handleOnClick = () => {
 		switch(nodeType) {
 			case 'WIFI':
@@ -82,6 +81,9 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 				break;
 			case 'BUILDING':
 				callAddBuildingNodeSubmit();
+				break;
+			case 'HOTSPOT':
+				callAddHotspotNodeSubmit();
 				break;
 			default:
 				break;
@@ -117,13 +119,14 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 					<Grid item container spacing={1}>
 						{nodeType === 'WIFI' && AddWifiNode}
 						{nodeType === 'BUILDING' && AddBuildingNode}
+						{nodeType === 'HOTSPOT' && AddHotspotNode}
 					</Grid>
 				</Grid>
 			</DialogContent>
 			<DialogActions style={{ padding: theme.spacing(3) }}>
 				<Grid style={{ flexGrow: 1, fontSize: 11, fontStyle: 'italic' }}>{hint}</Grid>
-				{nodeType !== null && <Button color='inherit' onClick={handleClose}>Cancel</Button>}
-				{nodeType !== null && <Button variant='contained' color='primary' onClick={handleOnClick}>Add</Button>}
+				<Button color='inherit' onClick={handleClose}>Cancel</Button>
+				<Button variant='contained' color='primary' disabled={nodeType === null} onClick={handleOnClick}>Add</Button>
 			</DialogActions>
 		</Dialog>
 	)
