@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { Grid, Typography, TextField, Card, CardActionArea, CardContent } from "@mui/material"
 import { makeStyles } from "@mui/styles"
 import neo4j, { Neo4jError, Session } from "neo4j-driver"
