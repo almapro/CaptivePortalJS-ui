@@ -36,7 +36,7 @@ const createWindow = () => {
 
   // Open the DevTools.
   if (isDev) {
-    // win.webContents.openDevTools({ mode: "detach" });
+    /* win.webContents.openDevTools({ mode: "detach" }); */
     installExtension(REACT_DEVELOPER_TOOLS)
       .then(name => console.log(`Added Extension:  ${name}`))
       .catch(error => console.log(`An error occurred: , ${error}`));
