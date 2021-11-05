@@ -1,4 +1,4 @@
-import { HashRouter, Switch } from 'react-router-dom';
+import { HashRouter, Routes } from 'react-router-dom';
 import { DashboardView, LoginView } from './views';
 import { createContext, useEffect, useState } from 'react';
 import { Driver, Session } from 'neo4j-driver';
@@ -155,6 +155,7 @@ const App = () => {
 				await txc.run('CREATE CONSTRAINT service_id IF NOT EXISTS ON (n:Service) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT server_id IF NOT EXISTS ON (n:Server) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT building_id IF NOT EXISTS ON (n:Building) ASSERT n.id IS UNIQUE');
+				await txc.run('CREATE CONSTRAINT floor_id IF NOT EXISTS ON (n:Floor) ASSERT n.id IS UNIQUE');
 				await txc.commit();
 				await session.close();
 			} catch(__) {}
@@ -189,6 +190,7 @@ const App = () => {
 				await txc.run('DROP CONSTRAINT service_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT server_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT building_id IF EXISTS');
+				await txc.run('DROP CONSTRAINT floor_id IF EXISTS');
 				await txc.commit();
 				await session.close();
 			} catch(__) {}
@@ -200,16 +202,16 @@ const App = () => {
 				<CssBaseline>
 					<SnackbarProvider maxSnack={3}>
 						<HashRouter basename='/'>
-							<Switch>
-								<RestrictedRoute path='/' exact>
+							<Routes>
+								<RestrictedRoute path='/' element={
 									<SigmaContainer>
 										<DashboardView />
 									</SigmaContainer>
-								</RestrictedRoute>
-								<AuthRoute path='/login' exact>
+								} />
+								<AuthRoute path='/login' element={
 									<LoginView />
-								</AuthRoute>
-							</Switch>
+								} />
+							</Routes>
 						</HashRouter>
 					</SnackbarProvider>
 				</CssBaseline>
