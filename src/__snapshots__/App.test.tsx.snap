@@ -606,22 +606,20 @@ exports[`renders learn react link 1`] = `
         <HashRouter
           basename="/"
         >
-          <Switch>
+          <Routes>
             <RestrictedRoute
-              exact={true}
+              element={
+                <Unknown>
+                  <DashboardView />
+                </Unknown>
+              }
               path="/"
-            >
-              <Component>
-                <DashboardView />
-              </Component>
-            </RestrictedRoute>
+            />
             <AuthRoute
-              exact={true}
+              element={<LoginView />}
               path="/login"
-            >
-              <LoginView />
-            </AuthRoute>
-          </Switch>
+            />
+          </Routes>
         </HashRouter>
       </SnackbarProvider>
     </CssBaseline>
