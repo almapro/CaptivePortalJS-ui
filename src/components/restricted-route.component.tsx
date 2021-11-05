@@ -1,6 +1,6 @@
 import { makeStyles } from "@mui/styles";
 import { FC, useContext } from "react";
-import { Redirect, Route, RouteProps, useLocation } from "react-router-dom";
+import { Navigate, Route, RouteProps, useLocation } from "react-router-dom";
 import { appContext } from "../App";
 import { AppBarComponent } from './app-bar.component';
 
@@ -26,5 +26,5 @@ export const RestrictedRoute: FC<RouteProps> = (props) => {
 			<Route {...props} />
 		</div>
 	</div>
-	) : <Redirect to={{ pathname: '/login', state: { from: location.pathname } }} />;
+	) : <Navigate to={'/login'} replace state={{ from: location.pathname }} />;
 }
