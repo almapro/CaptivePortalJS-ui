@@ -1,4 +1,4 @@
-import { HashRouter, Routes } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { DashboardView, LoginView } from './views';
 import { createContext, useEffect, useState } from 'react';
 import { Driver, Session } from 'neo4j-driver';
@@ -9,6 +9,7 @@ import Sigma from 'sigma';
 import { SnackbarProvider } from 'notistack';
 import { SigmaContainer } from 'react-sigma-v2';
 import 'react-sigma-v2/lib/react-sigma-v2.css';
+import getNodeProgramImage from 'sigma/rendering/webgl/programs/node.image';
 
 export type AppContext = {
 	darkMode: boolean
@@ -203,13 +204,17 @@ const App = () => {
 					<SnackbarProvider maxSnack={3}>
 						<HashRouter basename='/'>
 							<Routes>
-								<RestrictedRoute path='/' element={
-									<SigmaContainer>
-										<DashboardView />
-									</SigmaContainer>
+								<Route path='/' element={
+									<RestrictedRoute>
+										<SigmaContainer initialSettings={{ defaultNodeType: 'image',  nodeProgramClasses: { image: getNodeProgramImage() } }} style={{ background: 'transparent' }}>
+											<DashboardView />
+										</SigmaContainer>
+									</RestrictedRoute>
 								} />
-								<AuthRoute path='/login' element={
-									<LoginView />
+								<Route path='/login' element={
+									<AuthRoute>
+										<LoginView />
+									</AuthRoute>
 								} />
 							</Routes>
 						</HashRouter>
