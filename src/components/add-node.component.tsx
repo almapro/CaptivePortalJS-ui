@@ -3,15 +3,12 @@ import { makeStyles } from "@mui/styles";
 import {
 	Wifi as WifiIcon,
 	Router as RouterIcon,
-	Devices as DevicesIcon,
 	WifiTethering as WifiTetheringIcon,
-	Storage as StorageIcon,
-    HomeWork as HomeWorkIcon,
+	HomeWork as HomeWorkIcon,
 } from "@mui/icons-material";
 import { FC, useContext, useState } from "react";
 import { appContext } from "../App";
 import { useAddBuildingNode, useAddWifiNode, useAddHotspotNode, useAddRouterNode } from "./add-node-components";
-import _ from "lodash";
 
 export type AddNodeProps = {
 	show: boolean

@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { Grid, Typography, TextField } from "@mui/material"
 import { makeStyles } from "@mui/styles"
 import { Neo4jError, Session } from "neo4j-driver"
@@ -77,7 +76,7 @@ export const AddRouterNode: FC<AddRouterNodeProps> = ({ onDone, formRef }) => {
 			</Grid>
 			<Grid item xs={12} container>
 				<form ref={formRef} onSubmit={handleOnSubmit}>
-					<TextField required label='IP' className={classes.input} error={ipError} helperText={ipError ? 'IP address must be formatted properly' : ''} value={ip} onChange={e => setIp(e.target.value)} />
+					<TextField required label='IP' className={classes.input} error={ipError} helperText={ipError ? 'IP address must be formatted properly' : ''} value={ip} onChange={handleIpChange} />
 					<TextField required label='MAC' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={macError} helperText={macError ? 'MAC address must be formatted properly' : ''} value={mac} onChange={handleMacChange} />
 				</form>
 			</Grid>

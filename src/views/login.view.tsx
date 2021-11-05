@@ -75,7 +75,7 @@ export const LoginView = () => {
 			setTimeout(() => setError(''), 5000);
 		}
 	}
-	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setConnected, setError, database, setDatabase, url, username, password]);
+	const handleOnSubmitCallback = useCallback(handleOnSubmit, [setLoading, setDriver, setConnected, setError, database, setDatabase, url, username, password, setPassword, setUrl, setUsername]);
 	useEffect(() => {
 		if (autologin) {
 			setAutologin(false);

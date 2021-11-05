@@ -57,7 +57,7 @@ export const AddBuildingNode: FC<AddBuildingNodeProps> = ({ onDone, formRef, set
 		const id = v4();
 		const txr = session.beginTransaction();
 		await txr.run(`CREATE (n:Building { id: $id, name: $name, type: $buildingType })`, { id, name, buildingType });
-		if (buildingType == 'BUILDING') {
+		if (buildingType === 'BUILDING') {
 			for (let number = 0; number < floors; ++number) {
 				const fid = v4();
 				await txr.run('MATCH (b:Building { id: $id }) CREATE (f:Floor { id: $fid, number: $number }), (b)-[:HAS_FLOOR]->(f)', { id, fid, number: neo4j.int(number + 1) });

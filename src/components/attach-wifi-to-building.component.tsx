@@ -55,6 +55,7 @@ export const AttachWifiToBuilding: FC<AttachWifiToBuildingProps> = ({ show, clos
 				enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
 			}
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 	const handleOnSubmit = async (e: FormEvent) => {
 		e.preventDefault();
