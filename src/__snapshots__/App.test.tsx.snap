@@ -607,16 +607,36 @@ exports[`renders learn react link 1`] = `
           basename="/"
         >
           <Routes>
-            <RestrictedRoute
+            <Route
               element={
-                <Unknown>
-                  <DashboardView />
-                </Unknown>
+                <RestrictedRoute>
+                  <Unknown
+                    initialSettings={
+                      Object {
+                        "defaultNodeType": "image",
+                        "nodeProgramClasses": Object {
+                          "image": [Function],
+                        },
+                      }
+                    }
+                    style={
+                      Object {
+                        "background": "transparent",
+                      }
+                    }
+                  >
+                    <DashboardView />
+                  </Unknown>
+                </RestrictedRoute>
               }
               path="/"
             />
-            <AuthRoute
-              element={<LoginView />}
+            <Route
+              element={
+                <AuthRoute>
+                  <LoginView />
+                </AuthRoute>
+              }
               path="/login"
             />
           </Routes>
