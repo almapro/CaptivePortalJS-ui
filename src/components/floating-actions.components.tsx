@@ -18,7 +18,7 @@ export type FloatingActionsProps = {
 }
 
 export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings }) => {
-	const { theme } = useContext(appContext);
+	const { theme, search, setSearch, foundNode, setFoundNode } = useContext(appContext);
 	const sigma = useSigma();
 	const useStyles = makeStyles({
 		floatingActionsBottom: {
@@ -50,9 +50,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		},
 	});
 	const classes = useStyles();
-	const [search, setSearch] = useState('');
 	const [values, setValues] = useState<{ id: string, label: string }[]>([]);
-	const [selected, setSelected] = useState<string | null>(null);
 	const findMatchingNodes = (searchString: string, graph: Graph) => {
 		const foundMatchingNodes: { id: string, label: string }[] = []
 		graph.forEachNode((id, attributes) => {
@@ -65,16 +63,16 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 	useEffect(() => {
 		const graph = sigma.getGraph();
 		const newValues: { id: string, label: string }[] = [];
-		if (!selected && search.length > 0) {
+		if (!foundNode && search.length > 0) {
 			newValues.push(...findMatchingNodes(search, graph));
 		}
 		setValues(newValues);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [search, sigma]);
 	useEffect(() => {
-		if (!selected) return;
-		sigma.getGraph().setNodeAttribute(selected, 'highlighted', true);
-		const nodeDisplayData = sigma.getNodeDisplayData(selected);
+		if (!foundNode) return;
+		sigma.getGraph().setNodeAttribute(foundNode, 'highlighted', true);
+		const nodeDisplayData = sigma.getNodeDisplayData(foundNode);
 		if (nodeDisplayData) {
 			sigma.getCamera().animate(nodeDisplayData, {
 				easing: "linear",
@@ -82,19 +80,19 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			});
 		}
 		return () => {
-			sigma.getGraph().setNodeAttribute(selected, 'highlighted', false)
+			sigma.getGraph().setNodeAttribute(foundNode, 'highlighted', false)
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selected]);
+	}, [foundNode]);
 	const onInputChange = (searchString: string) => {
 		// const searchString = e.target.value;
 		const valueItem = values.find(value => value.label === searchString);
 		if (valueItem) {
 			setSearch(valueItem.label);
 			setValues([]);
-			setSelected(valueItem.id);
+			setFoundNode(valueItem.id);
 		} else {
-			setSelected(null);
+			setFoundNode(null);
 			setSearch(searchString);
 		}
 	}
@@ -124,7 +122,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 				<Autocomplete
 					disablePortal
 					options={values}
-					noOptionsText={search ===  '' ? 'Start typing to search' : selected ? 'Matched a node' : 'No match'}
+					noOptionsText={search ===  '' ? 'Start typing to search' : foundNode ? 'Matched a node' : 'No match'}
 					onInputChange={(__, v) => onInputChange(v)}
 					sx={{ width: 300 }}
 					renderInput={(params) => <TextField {...params} label='Find a node' />} />

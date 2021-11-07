@@ -18,21 +18,35 @@ export type AppContext = {
 	setConnected: (connected: boolean) => void
 	driver: Driver | null
 	setDriver: (driver: Driver | null) => void
-	database: string,
-	setDatabase: (database: string) => void,
-	username: string,
-	setUsername: (username: string) => void,
-	password: string,
-	setPassword: (password: string) => void,
-	url: string,
-	setUrl: (url: string) => void,
+	database: string
+	setDatabase: (database: string) => void
+	username: string
+	setUsername: (username: string) => void
+	password: string
+	setPassword: (password: string) => void
+	url: string
+	setUrl: (url: string) => void
 	sigma: Sigma | null
 	setSigma: (sigma: Sigma | null) => void
-	theme: Theme,
-	autologin: boolean,
-	setAutologin: (autoLogin: boolean) => void,
-	createDatabaseIndexesAndConstraints: (session: Session) => Promise<void>,
-	dropDatabaseIndexesAndConstraints: (session: Session) => Promise<void>,
+	theme: Theme
+	autologin: boolean
+	setAutologin: (autoLogin: boolean) => void
+	createDatabaseIndexesAndConstraints: (session: Session) => Promise<void>
+	dropDatabaseIndexesAndConstraints: (session: Session) => Promise<void>
+	search: string
+	setSearch: (search: string) => void
+	foundNode: string | null
+	setFoundNode: (node: string | null) => void
+	isFindPath: boolean
+	setIsFindPath: (isFindPath: boolean) => void
+	startNodeSearch: string
+	setStartNodeSearch: (search: string) => void
+	startNode: string | null
+	setStartNode: (startNode: string | null) => void
+	endNodeSearch: string
+	setEndNodeSearch: (search: string) => void
+	endNode: string | null
+	setEndNode: (endNode: string | null) => void
 }
 
 export const appContext = createContext<AppContext>({
@@ -67,6 +81,20 @@ export const appContext = createContext<AppContext>({
 	setAutologin: () => {},
 	createDatabaseIndexesAndConstraints: async () => {},
 	dropDatabaseIndexesAndConstraints: async () => {},
+	search: '',
+	setSearch: () => {},
+	foundNode: '',
+	setFoundNode: () => {},
+	isFindPath: false,
+	setIsFindPath: () => {},
+	startNodeSearch: '',
+	setStartNodeSearch: () => {},
+	startNode: '',
+	setStartNode: () => {},
+	endNodeSearch: '',
+	setEndNodeSearch: () => {},
+	endNode: '',
+	setEndNode: () => {},
 });
 
 const App = () => {
@@ -92,6 +120,13 @@ const App = () => {
 		}
 	}));
 	const [autologin, setAutologin] = useState(true);
+	const [search, setSearch] = useState('');
+	const [foundNode, setFoundNode] = useState<string | null>(null);
+	const [isFindPath, setIsFindPath] = useState(false);
+	const [startNodeSearch, setStartNodeSearch] = useState('');
+	const [startNode, setStartNode] = useState<string | null>(null);
+	const [endNodeSearch, setEndNodeSearch] = useState('');
+	const [endNode, setEndNode] = useState<string | null>(null);
 	useEffect(() => {
 		localStorage.setItem('darkMode', darkMode ? '1' : '');
 		setTheme(createTheme({
@@ -196,6 +231,20 @@ const App = () => {
 				await session.close();
 			} catch(__) {}
 		},
+		search,
+		setSearch,
+		foundNode,
+		setFoundNode,
+		isFindPath,
+		setIsFindPath,
+		startNodeSearch,
+		setStartNodeSearch,
+		startNode,
+		setStartNode,
+		endNodeSearch,
+		setEndNodeSearch,
+		endNode,
+		setEndNode,
 	}
 	return (
 		<appContext.Provider value={appContextValue}>
