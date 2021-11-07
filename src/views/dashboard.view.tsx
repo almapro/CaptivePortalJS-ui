@@ -12,7 +12,7 @@ import { Settings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -49,6 +49,7 @@ export const DashboardView = () => {
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
 	setSigma(sigma);
+	const [mouseMove, setMouseMove] = useState(false);
 	/**
 	 * Drag'n'Drop
 	 */
@@ -56,6 +57,7 @@ export const DashboardView = () => {
 		let isDragging = false;
 		let draggedNode: string | null = null;
 		sigma.on('downNode', e => {
+			setMouseMove(true);
 			isDragging = true;
 			draggedNode = e.node;
 			sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
@@ -72,6 +74,7 @@ export const DashboardView = () => {
 		});
 		// On mouse up, we reset the autoscale and the dragging mode
 		sigma.getMouseCaptor().on("mouseup", () => {
+			setMouseMove(false);
 			if (draggedNode) {
 				sigma.getGraph().removeNodeAttribute(draggedNode, "highlighted");
 			}
@@ -200,12 +203,13 @@ export const DashboardView = () => {
 			const sensibleSettings = forceAtlas2.inferSettings(graph);
 			forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
 			forceAtlas2.assign(graph, 50);
-			loadGraph(graph);
 			new SpringSupervisor(graph, { isNodeFixed: (n) => graph.getNodeAttribute(n, "highlighted") }).start();
 			await session.close();
+			loadGraph(graph);
+			sigma.refresh();
 		}
 	}
-	const createGraphCallback = useCallback(createGraph, [loadGraph, driver,  database]);
+	const createGraphCallback = useCallback(createGraph, [loadGraph, driver,  database, sigma]);
 	const [menu, setMenu] = useState<{
 		show: boolean,
 		node: string,
@@ -230,9 +234,9 @@ export const DashboardView = () => {
 				let attachedToRouter = false;
 				edgesEndpoints.forEach(([extremities, label]) => {
 					if (_.includes(extremities, e.node)) {
-						const node_type = graph.getNodeAttribute(extremities[1], 'node_type');
-						attachedToRouter = label === 'ATTACHED_TO' && node_type === 'ROUTER';
-						attachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
+						const node_type: NodeType = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'node_type');
+						if (!attachedToRouter) attachedToRouter = label === 'BROADCASTS' && node_type === 'ROUTER';
+						if (!attachedToBuilding) attachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
 				items.push([<AddIcon />, 'Add a client', async id => {
@@ -245,7 +249,7 @@ export const DashboardView = () => {
 					if (driver) {
 						if (attachedToBuilding) {
 							const session = driver.session({ database });
-							await session.run('MATCH (n:Wifi { id: $id })-[r:ATTACHED_TO]-() DELETE r', { id });
+							await session.run('MATCH ({ id: $id })-[r:ATTACHED_TO]-() DELETE r', { id });
 							await session.close();
 							enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Building`, { variant: 'success' });
 						} else {
@@ -259,11 +263,12 @@ export const DashboardView = () => {
 					if (driver) {
 						if (attachedToRouter) {
 							const session = driver.session({ database });
-							await session.run('MATCH (n:Wifi) OPTIONAL MATCH (n)-[r]-(b:Router) WHERE n.id = $id SET n.attached_to_router = false DELETE r', { id });
+							await session.run('MATCH ({ id: $id })-[r:BROADCASTS]-() DELETE r', { id });
 							await session.close();
 							enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Router`, { variant: 'success' });
 						} else {
-							//
+							setShowAttachWifiToRouter(true);
+							setToBeAttachedWifiId(id);
 						}
 						createGraphCallback();
 					}
@@ -336,7 +341,7 @@ export const DashboardView = () => {
 			nodeReducer: (node, data) => {
 				const graph = sigma.getGraph();
 				const newData: Attributes = { ...data, highlighted: data.highlighted || false, size: 15 };
-				if (hoveredNode) {
+				if (hoveredNode && !mouseMove) {
 					if (node === hoveredNode || graph.neighbors(hoveredNode).includes(node)) {
 						newData.highlighted = true;
 					} else {
@@ -349,13 +354,13 @@ export const DashboardView = () => {
 			edgeReducer: (edge, data) => {
 				const graph = sigma.getGraph();
 				const newData = { ...data, hidden: false };
-				if (hoveredNode && !graph.extremities(edge).includes(hoveredNode)) {
+				if (hoveredNode && !graph.extremities(edge).includes(hoveredNode) && !mouseMove) {
 					newData.hidden = true;
 				}
 				return newData;
 			},
 		});
-	}, [hoveredNode, setSigmaSettings, sigma, theme]);
+	}, [hoveredNode, setSigmaSettings, sigma, theme, mouseMove]);
 	useEffect(() => {
 		if (driver) {
 			createDatabaseIndexesAndConstraints(driver.session({ database }));
@@ -364,12 +369,14 @@ export const DashboardView = () => {
 	}, []);
 	const [showAddNode, setShowAddNode] = useState(false);
 	const [showAttachWifiToBuilding, setShowAttachWifiToBuilding] = useState(false);
+	const [showAttachWifiToRouter, setShowAttachWifiToRouter] = useState(false);
 	const [toBeAttachedWifiId, setToBeAttachedWifiId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} />
 			<AddNode onDone={createGraphCallback} show={showAddNode} close={() => setShowAddNode(false)}/>
 			<AttachWifiToBuilding wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToBuilding} close={() => { setShowAttachWifiToBuilding(false); setToBeAttachedWifiId(''); }}/>
+			<AttachWifiToRouter wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToRouter} close={() => { setShowAttachWifiToRouter(false); setToBeAttachedWifiId(''); }}/>
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
 		</>
 	)
