@@ -14,8 +14,6 @@ import {
 	CircularProgress,
 } from '@mui/material';
 import {
-	WbSunny as WbSunnyIcon,
-	Bedtime as BedtimeIcon,
 	VisibilityOff as VisibilityOffIcon,
 	Visibility as VisibilityIcon,
 } from '@mui/icons-material';
@@ -24,6 +22,7 @@ import { auth, driver, Neo4jError } from 'neo4j-driver';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
 import { appContext } from '../App';
+import { ThemeModeSwitch } from '../components';
 
 const useStyles = makeStyles<DefaultTheme, { mode: 'dark' | 'light' }>({
 	input: {
@@ -95,16 +94,7 @@ export const LoginView = () => {
 				<form onSubmit={handleOnSubmit}>
 					<Grid container spacing={3}>
 						<Grid container item xs={12} alignItems='center' direction='column' justifyContent='center'>
-							<IconButton
-								color='inherit'
-								edge='end'
-								onClick={() => toggleDarkMode()}>
-								{
-											!darkMode ?
-										<WbSunnyIcon /> :
-										<BedtimeIcon />
-								}
-							</IconButton>
+							<ThemeModeSwitch onClick={toggleDarkMode} checked={darkMode} />
 						</Grid>
 						<Grid item xs={12}>
 							<Collapse in={!!error}>

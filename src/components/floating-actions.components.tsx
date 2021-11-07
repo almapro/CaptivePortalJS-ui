@@ -6,6 +6,7 @@ import {
 	ZoomOut as ZoomOutIcon,
 	Search as SearchIcon,
 	Add as AddIcon,
+	Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
@@ -13,13 +14,14 @@ import Graph from 'graphology';
 
 export type FloatingActionsProps = {
 	showAddNode: () => void
+	showSettings: () => void
 }
 
-export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode }) => {
+export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings }) => {
 	const { theme } = useContext(appContext);
 	const sigma = useSigma();
 	const useStyles = makeStyles({
-		floatingActions: {
+		floatingActionsBottom: {
 			position: 'absolute',
 			zIndex: theme.zIndex.appBar,
 			bottom: theme.spacing(2),
@@ -30,6 +32,12 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode }) => {
 			zIndex: theme.zIndex.appBar,
 			top: theme.spacing(2),
 			left: theme.spacing(2),
+		},
+		floatingActionsTop: {
+			position: 'absolute',
+			zIndex: theme.zIndex.appBar,
+			top: theme.spacing(2),
+			right: theme.spacing(2),
 		},
 		paper: {
 			padding: theme.spacing(2),
@@ -101,8 +109,11 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode }) => {
 	}
 	return (
 		<>
-			<Fab sx={{ position: 'absolute', right: theme.spacing(2), top: theme.spacing(2), zIndex: theme.zIndex.appBar }} color='secondary' onClick={showAddNode}><AddIcon /></Fab>
-			<Box className={classes.floatingActions}>
+			<Box className={classes.floatingActionsTop} display='grid' rowGap={2}>
+				<Fab color='secondary' onClick={showSettings}><SettingsIcon /></Fab>
+				<Fab color='secondary' onClick={showAddNode}><AddIcon /></Fab>
+			</Box>
+			<Box className={classes.floatingActionsBottom}>
 				<ButtonGroup orientation='vertical' color='secondary' variant='contained'>
 					<Button onClick={handleZoomIn}><ZoomInIcon /></Button>
 					<Button onClick={handleZoomReset}><SearchIcon /></Button>

@@ -1,4 +1,3 @@
-export * from './app-bar.component';
 export * from './restricted-route.component';
 export * from './auth-route.component';
 export * from './context-menu.component';
@@ -7,3 +6,4 @@ export * from './add-node.component';
 export * from './add-node-components';
 export * from './attach-wifi-to-building.component';
 export * from './attach-wifi-to-router.component';
+export * from './settings.component';

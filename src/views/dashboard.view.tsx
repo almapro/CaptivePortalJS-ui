@@ -8,11 +8,11 @@ import {
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
 import Captor from 'sigma/core/captors/captor';
-import { Settings } from 'sigma/settings';
+import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -278,7 +278,7 @@ export const DashboardView = () => {
 		items.push([<DeleteIcon />, 'Delete node', async id => {
 			if (driver) {
 				const session = driver.session({ database });
-				await session.run('MATCH (n {id: $id}) OPTIONAL MATCH r = (n)--() DELETE r, n', { id });
+				await session.run('MATCH (n {id: $id}) OPTIONAL MATCH (n)-[r]-() DELETE r, n', { id });
 				enqueueSnackbar('Node deleted successfully', { variant: 'success' });
 				await session.close();
 				createGraphCallback();
@@ -300,7 +300,7 @@ export const DashboardView = () => {
 			...data,
 			size: 15,
 		});
-		const settings: Partial<Settings> = {
+		const settings: Partial<SigmaSettings> = {
 			defaultNodeType: 'image',
 			defaultEdgeColor: theme.palette.primary.main,
 			renderLabels: true,
@@ -365,15 +365,22 @@ export const DashboardView = () => {
 		if (driver) {
 			createDatabaseIndexesAndConstraints(driver.session({ database }));
 		}
+		return () => {
+			sigma.getGraph().clear();
+			sigma.removeAllListeners('rightClickNode');
+			sigma.getMouseCaptor().removeAllListeners('mousemove');
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 	const [showAddNode, setShowAddNode] = useState(false);
+	const [showSettings, setShowSettings] = useState(false);
 	const [showAttachWifiToBuilding, setShowAttachWifiToBuilding] = useState(false);
 	const [showAttachWifiToRouter, setShowAttachWifiToRouter] = useState(false);
 	const [toBeAttachedWifiId, setToBeAttachedWifiId] = useState('');
 	return (
 		<>
-			<FloatingActions showAddNode={() => setShowAddNode(true)} />
+			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
+			<Settings show={showSettings} close={() => setShowSettings(false)}/>
 			<AddNode onDone={createGraphCallback} show={showAddNode} close={() => setShowAddNode(false)}/>
 			<AttachWifiToBuilding wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToBuilding} close={() => { setShowAttachWifiToBuilding(false); setToBeAttachedWifiId(''); }}/>
 			<AttachWifiToRouter wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToRouter} close={() => { setShowAttachWifiToRouter(false); setToBeAttachedWifiId(''); }}/>
