@@ -10,7 +10,6 @@ import {
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
 import Graph from 'graphology';
-import { NodeType } from './add-node.component';
 
 export type FloatingActionsProps = {
 	showAddNode: () => void
