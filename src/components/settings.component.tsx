@@ -68,18 +68,13 @@ export const Settings: FC<SettingsProps> = ({ show, close }) => {
 	}
 	if (!show) return null;
 	return (
-		<Dialog open={show} fullWidth maxWidth='lg'>
+		<Dialog open={show} fullWidth maxWidth='sm'>
 			<DialogTitle>Settings</DialogTitle>
 			<DialogContent>
-				<Grid container spacing={2}>
-					<Grid item container spacing={0}>
-						<FormControlLabel
-							control={<ThemeModeSwitch onClick={toggleDarkMode} sx={{ m: 1 }} checked={darkMode} />}
-							label='Dark mode'
-							labelPlacement='start'
-							/>
-					</Grid>
-				</Grid>
+				<FormControlLabel
+					control={<ThemeModeSwitch onClick={toggleDarkMode} sx={{ m: 1 }} checked={darkMode} />}
+					label='Dark mode'
+					labelPlacement='start' />
 			</DialogContent>
 			<DialogActions style={{ padding: theme.spacing(3) }}>
 				<Grid container>
