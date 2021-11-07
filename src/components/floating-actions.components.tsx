@@ -127,7 +127,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 					noOptionsText={search ===  '' ? 'Start typing to search' : selected ? 'Matched a node' : 'No match'}
 					onInputChange={(__, v) => onInputChange(v)}
 					sx={{ width: 300 }}
-					renderInput={(params) => <TextField {...params} label="Search..." />} />
+					renderInput={(params) => <TextField {...params} label='Find a node' />} />
 			</Box>
 		</>
 	);
