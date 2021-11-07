@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import {
 	WbSunny as WbSunnyIcon,
 	Bedtime as BedtimeIcon,
-	PowerOff as PowerOffIcon,
+	Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useContext } from 'react';
 import { appContext } from '../App';
@@ -48,7 +48,7 @@ export const AppBarComponent = ({ title }: AppBarProps) => {
 					color='inherit'
 					edge='end'
 					onClick={() => disconnect()}>
-					<PowerOffIcon />
+					<LogoutIcon />
 				</IconButton>
 			</Toolbar>
 		</AppBar>
