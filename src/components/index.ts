@@ -6,3 +6,4 @@ export * from './floating-actions.components';
 export * from './add-node.component';
 export * from './add-node-components';
 export * from './attach-wifi-to-building.component';
+export * from './attach-wifi-to-router.component';
