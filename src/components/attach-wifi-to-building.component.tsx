@@ -62,6 +62,7 @@ export const AttachWifiToBuilding: FC<AttachWifiToBuildingProps> = ({ show, clos
 		if (driver) {
 			try {
 				await attachToBuilding(driver.session({ database }));
+				setRid('');
 				enqueueSnackbar('Wifi has been attached successfully', { variant: 'success' });
 				onDone();
 				close();
