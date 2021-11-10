@@ -7,3 +7,4 @@ export * from './add-node-components';
 export * from './attach-wifi-to-building.component';
 export * from './attach-wifi-to-router.component';
 export * from './settings.component';
+export * from './confirm-action.component';

@@ -12,7 +12,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -20,6 +20,7 @@ import forceAtlas2 from 'graphology-layout-forceatlas2';
 import Graph from 'graphology';
 import { useSnackbar } from "notistack"
 import _ from 'lodash';
+import { Neo4jError } from 'neo4j-driver';
 import { SpringSupervisor } from '../layout-spring';
 import RouterSvgIcon from '../images/Router.svg';
 import WifiSvgIcon from '../images/Wifi.svg';
@@ -55,12 +56,12 @@ export const DashboardView = () => {
 	 */
 	useEffect(() => {
 		let isDragging = false;
-		let draggedNode: string | null = null;
-		sigma.on('downNode', e => {
+		let draggedNode = '';
+		sigma.on('downNode', ({ node }) => {
 			setMouseMove(true);
 			isDragging = true;
-			draggedNode = e.node;
-			sigma.getGraph().setNodeAttribute(e.node, 'highlighted', true);
+			draggedNode = node;
+			sigma.getGraph().setNodeAttribute(node, 'highlighted', true);
 			sigma.getCamera().disable();
 		});
 		sigma.getMouseCaptor().on("mousemove", (e) => {
@@ -79,7 +80,7 @@ export const DashboardView = () => {
 				sigma.getGraph().removeNodeAttribute(draggedNode, "highlighted");
 			}
 			isDragging = false;
-			draggedNode = null;
+			draggedNode = '';
 			sigma.getCamera().enable();
 		});
 		// Disable the autoscale at the first down interaction
@@ -248,10 +249,17 @@ export const DashboardView = () => {
 				items.push([<HomeWorkIcon />, `${attachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
 						if (attachedToBuilding) {
-							const session = driver.session({ database });
-							await session.run('MATCH ({ id: $id })-[r:ATTACHED_TO]-() DELETE r', { id });
-							await session.close();
-							enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Building`, { variant: 'success' });
+							setShowConfirmAction(true);
+							setConfirmActionName('Deattach');
+							setConfirmActionTitle('Deattach node');
+							setConfirmActionQuestion(`Are you sure you want to deattach node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
+							setConfirmAction(() => () => {
+								const session = driver.session({ database });
+								session.run('MATCH ({ id: $id })-[r:ATTACHED_TO]-() DELETE r', { id })
+									.then(() => { enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Building`, { variant: 'success' }); })
+									.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+									.finally(() => { session.close(); createGraphCallback(); });
+							});
 						} else {
 							setShowAttachWifiToBuilding(true);
 							setToBeAttachedWifiId(id);
@@ -259,30 +267,43 @@ export const DashboardView = () => {
 						createGraphCallback();
 					}
 				}]);
-				items.push([<RouterIcon />, `${attachedToRouter ?  'Deattach from' : 'Attach to'} a router`, async id => {
+				items.push([<RouterIcon />, `${attachedToRouter ?  'Deattach from' : 'Attach to'} a router`, id => {
 					if (driver) {
 						if (attachedToRouter) {
-							const session = driver.session({ database });
-							await session.run('MATCH ({ id: $id })-[r:BROADCASTS]-() DELETE r', { id });
-							await session.close();
-							enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Router`, { variant: 'success' });
+							setShowConfirmAction(true);
+							setConfirmActionName('Deattach');
+							setConfirmActionTitle('Deattach node');
+							setConfirmActionQuestion(`Are you sure you want to deattach node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
+							setConfirmAction(() => () => {
+								const session = driver.session({ database });
+								session.run('MATCH ({ id: $id })-[r:BROADCASTS]-() DELETE r', { id })
+									.then(() => { enqueueSnackbar(`Deattached Wifi (${sigma.getGraph().getNodeAttribute(id, 'essid')}) from Router`, { variant: 'success' }); })
+									.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+									.finally(() => { session.close(); createGraphCallback(); });
+							});
 						} else {
 							setShowAttachWifiToRouter(true);
 							setToBeAttachedWifiId(id);
+							createGraphCallback();
 						}
-						createGraphCallback();
 					}
 				}]);
 				break;
 		}
-		items.push([<DeleteIcon />, 'Delete node', async id => {
-			if (driver) {
-				const session = driver.session({ database });
-				await session.run('MATCH (n {id: $id}) OPTIONAL MATCH (n)-[r]-() DELETE r, n', { id });
-				enqueueSnackbar('Node deleted successfully', { variant: 'success' });
-				await session.close();
-				createGraphCallback();
-			}
+		if (nodeType !== 'FLOOR') items.push([<DeleteIcon />, 'Delete node', id => {
+			setShowConfirmAction(true);
+			setConfirmActionName('Delete');
+			setConfirmActionTitle('Delete node');
+			setConfirmActionQuestion(`Are you sure you want to delete node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
+			setConfirmAction(() => () => {
+				if (driver) {
+					const session = driver.session({ database });
+					session.run('MATCH (n {id: $id}) OPTIONAL MATCH (n)-[r]-() DELETE r, n', { id })
+						.then(() => { enqueueSnackbar('Node deleted successfully', { variant: 'success' }); })
+						.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+						.finally(() => { session.close(); createGraphCallback(); });
+				}
+			});
 		}]);
 		setMenu({
 			show: true,
@@ -377,6 +398,11 @@ export const DashboardView = () => {
 	const [showAttachWifiToBuilding, setShowAttachWifiToBuilding] = useState(false);
 	const [showAttachWifiToRouter, setShowAttachWifiToRouter] = useState(false);
 	const [toBeAttachedWifiId, setToBeAttachedWifiId] = useState('');
+	const [showConfirmAction, setShowConfirmAction] = useState(false);
+	const [confirmActionName, setConfirmActionName] = useState('');
+	const [confirmActionTitle, setConfirmActionTitle] = useState('');
+	const [confirmActionQuestion, setConfirmActionQuestion] = useState('');
+	const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -384,6 +410,7 @@ export const DashboardView = () => {
 			<AddNode onDone={createGraphCallback} show={showAddNode} close={() => setShowAddNode(false)}/>
 			<AttachWifiToBuilding wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToBuilding} close={() => { setShowAttachWifiToBuilding(false); setToBeAttachedWifiId(''); }}/>
 			<AttachWifiToRouter wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToRouter} close={() => { setShowAttachWifiToRouter(false); setToBeAttachedWifiId(''); }}/>
+			<ConfirmAction close={() => { setShowConfirmAction(false); setConfirmAction(() => {}); }} actionName={confirmActionName} actionTitle={confirmActionTitle} actionQuestion={confirmActionQuestion} onConfirm={confirmAction} show={showConfirmAction} />
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
 		</>
 	)
