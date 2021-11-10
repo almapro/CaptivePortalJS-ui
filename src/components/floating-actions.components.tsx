@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField } from '@mui/material';
+import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, Paper } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { FC, useContext, useState, useEffect } from 'react';
 import {
@@ -84,8 +84,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [foundNode]);
-	const onInputChange = (searchString: string) => {
-		// const searchString = e.target.value;
+	const handleSearchChange = (searchString: string) => {
 		const valueItem = values.find(value => value.label === searchString);
 		if (valueItem) {
 			setSearch(valueItem.label);
@@ -119,13 +118,15 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 				</ButtonGroup>
 			</Box>
 			<Box className={classes.floatingSearch}>
-				<Autocomplete
-					disablePortal
-					options={values}
-					noOptionsText={search ===  '' ? 'Start typing to search' : foundNode ? 'Matched a node' : 'No match'}
-					onInputChange={(__, v) => onInputChange(v)}
-					sx={{ width: 300 }}
-					renderInput={(params) => <TextField {...params} label='Find a node' />} />
+				<Paper>
+					<Autocomplete
+						disablePortal
+						options={values}
+						noOptionsText={search ===  '' ? 'Start typing to search' : foundNode ? 'Matched a node' : 'No match'}
+						onInputChange={(__, v) => handleSearchChange(v)}
+						sx={{ width: 300 }}
+						renderInput={(params) => <TextField {...params} label='Find a node' />} />
+				</Paper>
 			</Box>
 		</>
 	);
