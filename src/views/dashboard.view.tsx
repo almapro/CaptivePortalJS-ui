@@ -12,7 +12,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -200,6 +200,24 @@ export const DashboardView = () => {
 				addNodeToGraph(wifi, 'WIFI', graph);
 				addEdgeToGraph(router.id, wifi.id, 'BROADCASTS', graph);
 			});
+			const routersAttachedToHouses = await txc.run(`MATCH r = (:Router)-[:ATTACHED_TO]-(:Building) RETURN r`);
+			routersAttachedToHouses.records.forEach(async record => {
+				const relation = record.toObject().r;
+				const router = relation.start.properties;
+				const house = relation.end.properties;
+				addNodeToGraph(router, 'ROUTER', graph);
+				addNodeToGraph(house, 'HOUSE', graph);
+				addEdgeToGraph(router.id, house.id, 'ATTACHED_TO', graph);
+			});
+			const routersAttachedToFloors = await txc.run(`MATCH r = (:Router)-[:ATTACHED_TO]-(:Floor) RETURN r`);
+			routersAttachedToFloors.records.forEach(async record => {
+				const relation = record.toObject().r;
+				const router = relation.start.properties;
+				const floor = relation.end.properties;
+				addNodeToGraph(router, 'ROUTER', graph);
+				addNodeToGraph(floor, 'FLOOR', graph);
+				addEdgeToGraph(router.id, floor.id, 'ATTACHED_TO', graph);
+			});
 			circlepack.assign(graph, { hierarchyAttributes: ['node_type'] });
 			const sensibleSettings = forceAtlas2.inferSettings(graph);
 			forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
@@ -227,17 +245,17 @@ export const DashboardView = () => {
 	const handleNodeRightClick = (e: ClickNode) => {
 		const nodeType: NodeType = sigma.getGraph().getNodeAttribute(e.node, 'node_type');
 		const items: [JSX.Element, string, (id: string) => void][] = [];
+		const graph = sigma.getGraph();
+		const edgesEndpoints = graph.edges().map(edge => [graph.extremities(edge), graph.getEdgeAttribute(edge, 'label')]);
 		switch (nodeType) {
 			case 'WIFI':
-				const graph = sigma.getGraph();
-				const edgesEndpoints = graph.edges().map(edge => [graph.extremities(edge), graph.getEdgeAttribute(edge, 'label')]);
-				let attachedToBuilding = false;
-				let attachedToRouter = false;
+				let wifiAttachedToBuilding = false;
+				let wifiAttachedToRouter = false;
 				edgesEndpoints.forEach(([extremities, label]) => {
 					if (_.includes(extremities, e.node)) {
 						const node_type: NodeType = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'node_type');
-						if (!attachedToRouter) attachedToRouter = label === 'BROADCASTS' && node_type === 'ROUTER';
-						if (!attachedToBuilding) attachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
+						if (!wifiAttachedToRouter) wifiAttachedToRouter = label === 'BROADCASTS' && node_type === 'ROUTER';
+						if (!wifiAttachedToBuilding) wifiAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
 				items.push([<AddIcon />, 'Add a client', async id => {
@@ -246,9 +264,9 @@ export const DashboardView = () => {
 				items.push([<UploadIcon />, 'Upload a handshake file', async id => {
 					//
 				}]);
-				items.push([<HomeWorkIcon />, `${attachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
+				items.push([<HomeWorkIcon />, `${wifiAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
-						if (attachedToBuilding) {
+						if (wifiAttachedToBuilding) {
 							setShowConfirmAction(true);
 							setConfirmActionName('Deattach');
 							setConfirmActionTitle('Deattach node');
@@ -267,9 +285,9 @@ export const DashboardView = () => {
 						createGraphCallback();
 					}
 				}]);
-				items.push([<RouterIcon />, `${attachedToRouter ?  'Deattach from' : 'Attach to'} a router`, id => {
+				items.push([<RouterIcon />, `${wifiAttachedToRouter ?  'Deattach from' : 'Attach to'} a router`, id => {
 					if (driver) {
-						if (attachedToRouter) {
+						if (wifiAttachedToRouter) {
 							setShowConfirmAction(true);
 							setConfirmActionName('Deattach');
 							setConfirmActionTitle('Deattach node');
@@ -286,6 +304,39 @@ export const DashboardView = () => {
 							setToBeAttachedWifiId(id);
 							createGraphCallback();
 						}
+					}
+				}]);
+				break;
+			case 'ROUTER':
+				let routerAttachedToBuilding = false;
+				edgesEndpoints.forEach(([extremities, label]) => {
+					if (_.includes(extremities, e.node)) {
+						const node_type: NodeType = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'node_type');
+						if (!routerAttachedToBuilding) routerAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
+					}
+				});
+				items.push([<AddIcon />, 'Add a client', async id => {
+					//
+				}]);
+				items.push([<HomeWorkIcon />, `${routerAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
+					if (driver) {
+						if (routerAttachedToBuilding) {
+							setShowConfirmAction(true);
+							setConfirmActionName('Deattach');
+							setConfirmActionTitle('Deattach node');
+							setConfirmActionQuestion(`Are you sure you want to deattach node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
+							setConfirmAction(() => () => {
+								const session = driver.session({ database });
+								session.run('MATCH ({ id: $id })-[r:ATTACHED_TO]-() DELETE r', { id })
+									.then(() => { enqueueSnackbar(`Deattached Router (${sigma.getGraph().getNodeAttribute(id, 'label')}) from Building`, { variant: 'success' }); })
+									.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+									.finally(() => { session.close(); createGraphCallback(); });
+							});
+						} else {
+							setShowAttachRouterToBuilding(true);
+							setToBeAttachedRouterId(id);
+						}
+						createGraphCallback();
 					}
 				}]);
 				break;
@@ -398,6 +449,8 @@ export const DashboardView = () => {
 	const [showAttachWifiToBuilding, setShowAttachWifiToBuilding] = useState(false);
 	const [showAttachWifiToRouter, setShowAttachWifiToRouter] = useState(false);
 	const [toBeAttachedWifiId, setToBeAttachedWifiId] = useState('');
+	const [showAttachRouterToBuilding, setShowAttachRouterToBuilding] = useState(false);
+	const [toBeAttachedRouterId, setToBeAttachedRouterId] = useState('');
 	const [showConfirmAction, setShowConfirmAction] = useState(false);
 	const [confirmActionName, setConfirmActionName] = useState('');
 	const [confirmActionTitle, setConfirmActionTitle] = useState('');
@@ -409,6 +462,7 @@ export const DashboardView = () => {
 			<Settings show={showSettings} close={() => setShowSettings(false)}/>
 			<AddNode onDone={createGraphCallback} show={showAddNode} close={() => setShowAddNode(false)}/>
 			<AttachWifiToBuilding wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToBuilding} close={() => { setShowAttachWifiToBuilding(false); setToBeAttachedWifiId(''); }}/>
+			<AttachRouterToBuilding routerId={toBeAttachedRouterId} onDone={createGraphCallback} show={showAttachRouterToBuilding} close={() => { setShowAttachRouterToBuilding(false); setToBeAttachedRouterId(''); }}/>
 			<AttachWifiToRouter wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToRouter} close={() => { setShowAttachWifiToRouter(false); setToBeAttachedWifiId(''); }}/>
 			<ConfirmAction close={() => { setShowConfirmAction(false); setConfirmAction(() => {}); }} actionName={confirmActionName} actionTitle={confirmActionTitle} actionQuestion={confirmActionQuestion} onConfirm={confirmAction} show={showConfirmAction} />
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
