@@ -6,9 +6,10 @@ import {
 	WifiTethering as WifiTetheringIcon,
 	HomeWork as HomeWorkIcon,
 } from "@mui/icons-material";
-import { FC, useContext, useState } from "react";
+import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
-import { useAddBuildingNode, useAddWifiNode, useAddHotspotNode, useAddRouterNode } from "./add-node-components";
+import { useAddBuildingNode, useAddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
+import EventEmitter from "events";
 
 export type AddNodeProps = {
 	show: boolean
@@ -68,14 +69,15 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		onDoneParent();
 		handleClose();
 	}
-	const [callAddWifiNodeSubmit, AddWifiNode] = useAddWifiNode({ onDone });
+	const addWifiNodeEventEmitter = new EventEmitter();
 	const [callAddBuildingNodeSubmit, AddBuildingNode] = useAddBuildingNode({ onDone, setHint, defaultHint });
 	const [callAddHotspotNodeSubmit, AddHotspotNode] = useAddHotspotNode({ onDone });
 	const [callAddRouterNodeSubmit, AddRouterNode] = useAddRouterNode({ onDone });
-	const handleOnClick = () => {
+	const handleOnSubmit = (e: FormEvent) => {
+		e.preventDefault();
 		switch(nodeType) {
 			case 'WIFI':
-				callAddWifiNodeSubmit();
+				addWifiNodeEventEmitter.emit('ADD_WIFI_NODE');
 				break;
 			case 'BUILDING':
 				callAddBuildingNodeSubmit();
@@ -92,44 +94,46 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 	}
 	return (
 		<Dialog open={show} fullWidth maxWidth='lg'>
-			<DialogTitle>Add a node</DialogTitle>
-			<DialogContent>
-				<Grid container spacing={2}>
-					<Grid item container spacing={1}>
-						<Grid item xs={12}>
-							<Typography variant='caption'>Node type</Typography>
+			<form onSubmit={handleOnSubmit}>
+				<DialogTitle>Add a node</DialogTitle>
+				<DialogContent>
+					<Grid container spacing={2}>
+						<Grid item container spacing={1}>
+							<Grid item xs={12}>
+								<Typography variant='caption'>Node type</Typography>
+							</Grid>
+							<Grid item container xs={12} spacing={1}>
+								{nodeTypes.map((node, idx) => (
+									<Grid key={idx} item onMouseOver={() => setHint(node[3])} onMouseOut={() => setHint(defaultHint)}>
+										<Card variant='outlined' sx={{ width: 75, height: 75 }}>
+											<CardActionArea className={classes.cardActionArea} disabled={node[2] === nodeType} onClick={() => setNodeType(node[2])}>
+												<CardContent sx={{ height: 75 }}>
+													<Grid container justifyContent='center' alignItems='center' direction='column' height='100%'>
+														<Grid item>{node[0]}</Grid>
+														<Grid item>{node[1]}</Grid>
+													</Grid>
+												</CardContent>
+											</CardActionArea>
+										</Card>
+									</Grid>
+								))}
+							</Grid>
 						</Grid>
-						<Grid item container xs={12} spacing={1}>
-							{nodeTypes.map((node, idx) => (
-								<Grid key={idx} item onMouseOver={() => setHint(node[3])} onMouseOut={() => setHint(defaultHint)}>
-									<Card variant='outlined' sx={{ width: 75, height: 75 }}>
-										<CardActionArea className={classes.cardActionArea} disabled={node[2] === nodeType} onClick={() => setNodeType(node[2])}>
-											<CardContent sx={{ height: 75 }}>
-												<Grid container justifyContent='center' alignItems='center' direction='column' height='100%'>
-													<Grid item>{node[0]}</Grid>
-													<Grid item>{node[1]}</Grid>
-												</Grid>
-											</CardContent>
-										</CardActionArea>
-									</Card>
-								</Grid>
-							))}
+						{nodeType !== null && <Divider variant='middle' className={classes.divider} />}
+						<Grid item container spacing={1}>
+							{nodeType === 'WIFI' && <AddWifiNode onDone={onDone} eventEmitter={addWifiNodeEventEmitter} />}
+							{nodeType === 'BUILDING' && AddBuildingNode}
+							{nodeType === 'HOTSPOT' && AddHotspotNode}
+							{nodeType === 'ROUTER' && AddRouterNode}
 						</Grid>
 					</Grid>
-					{nodeType !== null && <Divider variant='middle' className={classes.divider} />}
-					<Grid item container spacing={1}>
-						{nodeType === 'WIFI' && AddWifiNode}
-						{nodeType === 'BUILDING' && AddBuildingNode}
-						{nodeType === 'HOTSPOT' && AddHotspotNode}
-						{nodeType === 'ROUTER' && AddRouterNode}
-					</Grid>
-				</Grid>
-			</DialogContent>
-			<DialogActions style={{ padding: theme.spacing(3) }}>
-				<Grid style={{ flexGrow: 1, fontSize: 11, fontStyle: 'italic' }}>{hint}</Grid>
-				<Button color='inherit' onClick={handleClose}>Cancel</Button>
-				<Button variant='contained' color='primary' disabled={nodeType === null} onClick={handleOnClick}>Add</Button>
-			</DialogActions>
+				</DialogContent>
+				<DialogActions style={{ padding: theme.spacing(3) }}>
+					<Grid style={{ flexGrow: 1, fontSize: 11, fontStyle: 'italic' }}>{hint}</Grid>
+					<Button color='inherit' onClick={handleClose}>Cancel</Button>
+					<Button variant='contained' color='primary' disabled={nodeType === null} type='submit'>Add</Button>
+				</DialogActions>
+			</form>
 		</Dialog>
 	)
 }
