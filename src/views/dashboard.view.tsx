@@ -48,7 +48,7 @@ export type NodeStructure = {
 
 export const DashboardView = () => {
 	useTitle('Dashboard - Captive Portal JS');
-	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, setStartNodeSearch, endNode, setEndNode, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
+	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
 	setSigma(sigma);
@@ -267,6 +267,7 @@ export const DashboardView = () => {
 		y: 0,
 		items: [],
 	});
+	const [foundPath, setFoundPath] = useState(false);
 	const handleNodeRightClick = (e: ClickNode) => {
 		const graph = sigma.getGraph();
 		const nodeType: NodeType = graph.getNodeAttribute(e.node, 'node_type');
@@ -293,7 +294,7 @@ export const DashboardView = () => {
 						if (!wifiAttachedToBuilding) wifiAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
-				items.push([<AddIcon />, 'Add a client', id => {
+				if (!foundPath) items.push([<AddIcon />, 'Add a client', id => {
 					setShowAddClientTo(true);
 					setAddClientToRouter(false);
 					setAddClientToId(id);
@@ -301,7 +302,7 @@ export const DashboardView = () => {
 				items.push([<UploadIcon />, 'Upload a handshake file', async id => {
 					//
 				}]);
-				items.push([<HomeWorkIcon />, `${wifiAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
+				if (!foundPath) items.push([<HomeWorkIcon />, `${wifiAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
 						if (wifiAttachedToBuilding) {
 							setShowConfirmAction(true);
@@ -322,7 +323,7 @@ export const DashboardView = () => {
 						createGraphCallback();
 					}
 				}]);
-				items.push([<RouterIcon />, `${wifiAttachedToRouter ?  'Deattach from' : 'Attach to'} a router`, id => {
+				if (!foundPath) items.push([<RouterIcon />, `${wifiAttachedToRouter ?  'Deattach from' : 'Attach to'} a router`, id => {
 					if (driver) {
 						if (wifiAttachedToRouter) {
 							setShowConfirmAction(true);
@@ -352,12 +353,12 @@ export const DashboardView = () => {
 						if (!routerAttachedToBuilding) routerAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
-				items.push([<AddIcon />, 'Add a client', id => {
+				if (!foundPath) items.push([<AddIcon />, 'Add a client', id => {
 					setShowAddClientTo(true);
 					setAddClientToRouter(true);
 					setAddClientToId(id);
 				}]);
-				items.push([<HomeWorkIcon />, `${routerAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
+				if (!foundPath) items.push([<HomeWorkIcon />, `${routerAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
 						if (routerAttachedToBuilding) {
 							setShowConfirmAction(true);
@@ -404,7 +405,14 @@ export const DashboardView = () => {
 			items,
 		});
 	}
-	const handleNodeRightClickCallback = useCallback(handleNodeRightClick, [setMenu, driver, sigma, enqueueSnackbar, createGraphCallback, database]);
+	const handleNodeRightClickCallback = useCallback(handleNodeRightClick, [setMenu, driver, sigma, enqueueSnackbar, createGraphCallback, database, foundPath]);
+	useEffect(() => {
+		sigma.addListener('rightClickNode', handleNodeRightClickCallback);
+		return () => {
+			sigma.removeAllListeners('rightClickNode');
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [foundPath]);
 	const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 	const registerEvents = useRegisterEvents();
 	useEffect(() => {
@@ -428,7 +436,6 @@ export const DashboardView = () => {
 			},
 		}
 		setSigmaSettings(settings);
-		sigma.addListener('rightClickNode', handleNodeRightClickCallback);
 		createGraphCallback();
 		registerEvents({
 			enterNode: e => setHoveredNode(e.node),
@@ -484,13 +491,16 @@ export const DashboardView = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-	const [foundPath, setFoundPath] = useState(false);
 	const findPathBetweenNodes = async (startNode: string, endNode: string) => {
 		if (driver) {
 			try {
 				const graph = new Graph();
 				const session = driver.session({ database });
 				const paths = await session.run('MATCH (n1 { id: $startNode }), (n2 { id: $endNode }), p = shortestPath((n1)-[*]-(n2)) RETURN p', { startNode, endNode });
+				if (paths.records.length === 0) {
+					enqueueSnackbar(`There's no path between (${startNodeSearch}) and (${endNodeSearch})`, { variant: 'warning' });
+					return;
+				}
 				paths.records.forEach(record => {
 					const segments = record.toObject().p.segments;
 					segments.forEach(({ relationship, start, end }: any) => {
