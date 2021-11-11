@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, Paper, IconButton, Grid, Tooltip } from '@mui/material';
+import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, IconButton, Grid, Tooltip } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { FC, useContext, useState, useEffect } from 'react';
 import {
