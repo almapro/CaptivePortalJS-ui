@@ -8,7 +8,7 @@ import {
 } from "@mui/icons-material";
 import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
-import { AddBuildingNode, useAddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
+import { AddBuildingNode, AddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
 import EventEmitter from "events";
 
 export type AddNodeProps = {
@@ -70,7 +70,6 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		handleClose();
 	}
 	const addNodeEventEmitter = new EventEmitter();
-	const [callAddHotspotNodeSubmit, AddHotspotNode] = useAddHotspotNode({ onDone });
 	const [callAddRouterNodeSubmit, AddRouterNode] = useAddRouterNode({ onDone });
 	const handleOnSubmit = (e: FormEvent) => {
 		e.preventDefault();
@@ -82,7 +81,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 				addNodeEventEmitter.emit('ADD_BUILDING_NODE');
 				break;
 			case 'HOTSPOT':
-				callAddHotspotNodeSubmit();
+				addNodeEventEmitter.emit('ADD_HOTSPOT_NODE');
 				break;
 			case 'ROUTER':
 				callAddRouterNodeSubmit();
@@ -122,7 +121,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 						<Grid item container spacing={1}>
 							{nodeType === 'WIFI' && <AddWifiNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
 							{nodeType === 'BUILDING' && <AddBuildingNode onDone={onDone} setHint={setHint} defaultHint={defaultHint} eventEmitter={addNodeEventEmitter} />}
-							{nodeType === 'HOTSPOT' && AddHotspotNode}
+							{nodeType === 'HOTSPOT' && <AddHotspotNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
 							{nodeType === 'ROUTER' && AddRouterNode}
 						</Grid>
 					</Grid>

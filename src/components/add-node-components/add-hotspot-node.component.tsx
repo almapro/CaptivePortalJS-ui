@@ -3,27 +3,17 @@ import { Grid, Typography, TextField } from "@mui/material"
 import { makeStyles } from "@mui/styles"
 import { Neo4jError, Session } from "neo4j-driver"
 import { useSnackbar } from "notistack"
-import { ChangeEvent, createRef, FC, FormEvent, Ref, useContext, useState } from "react"
+import { ChangeEvent, FC, useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { appContext } from "../../App"
+import EventEmitter from 'events';
 
 export type AddHotspotNodeProps = {
 	onDone: () => void
-	formRef: Ref<HTMLFormElement>
+	eventEmitter: EventEmitter
 }
 
-export const useAddHotspotNode = ({ onDone }: Omit<AddHotspotNodeProps, 'formRef'>): [() => void, JSX.Element] => {
-	const formRef = createRef<HTMLFormElement>();
-	const callSubmit = () => {
-		const form = formRef.current;
-		if (form) {
-			form.requestSubmit();
-		}
-	}
-	return [callSubmit, <AddHotspotNode formRef={formRef} onDone={onDone} />];
-}
-
-export const AddHotspotNode: FC<AddHotspotNodeProps> = ({ onDone, formRef }) => {
+export const AddHotspotNode: FC<AddHotspotNodeProps> = ({ onDone, eventEmitter }) => {
 	const { enqueueSnackbar } = useSnackbar();
 	const { darkMode, driver, database } = useContext(appContext);
 	const [essid, setEssid] = useState('');
@@ -54,29 +44,32 @@ export const AddHotspotNode: FC<AddHotspotNodeProps> = ({ onDone, formRef }) => 
 		await txr.commit();
 		await session.close();
 	}
-	const handleOnSubmit = async (e: FormEvent) => {
-		e.preventDefault();
-		if (driver) {
-			try {
-				await createHotspot(driver.session({ database }));
-				enqueueSnackbar('Hotspot node added successfuly', { variant: 'success' });
-				onDone();
-			} catch(e) {
-				enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+	useEffect(() => {
+		eventEmitter.on('ADD_HOTSPOT_NODE', async () => {
+			if (driver) {
+				try {
+					await createHotspot(driver.session({ database }));
+					enqueueSnackbar('Hotspot node added successfuly', { variant: 'success' });
+					onDone();
+				} catch(e) {
+					enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+				}
 			}
+		});
+		return () => {
+			eventEmitter.removeAllListeners('ADD_HOTSPOT_NODE');
 		}
-	}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [essid, bssid, password]);
 	return (
 		<>
 			<Grid item xs={12}>
 				<Typography variant='caption'>Hotspot</Typography>
 			</Grid>
 			<Grid item xs={12} container>
-				<form ref={formRef} onSubmit={handleOnSubmit}>
-					<TextField required label='ESSID' className={classes.input} value={essid} onChange={e => setEssid(e.target.value)} />
-					<TextField required label='BSSID' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={bssidError} helperText={bssidError ? 'BSSID must be formatted properly' : ''} value={bssid} onChange={handleBssidChange} />
-					<TextField label='Password (optional)' className={classes.input} value={password} onChange={e => setPassword(e.target.value)} />
-				</form>
+				<TextField required label='ESSID' className={classes.input} value={essid} onChange={e => setEssid(e.target.value)} />
+				<TextField required label='BSSID' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={bssidError} helperText={bssidError ? 'BSSID must be formatted properly' : ''} value={bssid} onChange={handleBssidChange} />
+				<TextField label='Password (optional)' className={classes.input} value={password} onChange={e => setPassword(e.target.value)} />
 			</Grid>
 		</>
 	)
