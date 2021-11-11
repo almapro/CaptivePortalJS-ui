@@ -22,7 +22,7 @@ export const ConfirmAction: FC<ConfirmActionProps> = ({ actionName, actionTitle,
 			<DialogContent>{actionQuestion}</DialogContent>
 			<DialogActions>
 				<Button color='inherit' onClick={close}>Cancel</Button>
-				<Button variant='contained' color='primary' onClick={handleOnConfirm}>{actionName}</Button>
+				<Button variant='contained' color='error' onClick={handleOnConfirm}>{actionName}</Button>
 			</DialogActions>
 		</Dialog>
 	)
