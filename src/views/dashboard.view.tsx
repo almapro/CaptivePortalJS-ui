@@ -4,6 +4,8 @@ import {
 	Upload as UploadIcon,
 	HomeWork as HomeWorkIcon,
     Router as RouterIcon,
+	Flag as FlagIcon,
+	PinDrop as PinDropIcon,
 } from '@mui/icons-material';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
@@ -46,7 +48,7 @@ export type NodeStructure = {
 
 export const DashboardView = () => {
 	useTitle('Dashboard - Captive Portal JS');
-	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints } = useContext(appContext);
+	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, setStartNodeSearch, endNode, setEndNode, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
 	setSigma(sigma);
@@ -266,9 +268,19 @@ export const DashboardView = () => {
 		items: [],
 	});
 	const handleNodeRightClick = (e: ClickNode) => {
-		const nodeType: NodeType = sigma.getGraph().getNodeAttribute(e.node, 'node_type');
-		const items: [JSX.Element, string, (id: string) => void][] = [];
 		const graph = sigma.getGraph();
+		const nodeType: NodeType = graph.getNodeAttribute(e.node, 'node_type');
+		const items: [JSX.Element, string, (id: string) => void][] = [];
+		items.push([<FlagIcon />, 'Set as a start node', id => {
+			setIsFindPath(true);
+			setStartNode(id);
+			setStartNodeSearch(graph.getNodeAttribute(id, 'label'));
+		}]);
+		items.push([<PinDropIcon />, 'Set as an end node', id => {
+			setIsFindPath(true);
+			setEndNode(id);
+			setEndNodeSearch(graph.getNodeAttribute(id, 'label'));
+		}]);
 		const edgesEndpoints = graph.edges().map(edge => [graph.extremities(edge), graph.getEdgeAttribute(edge, 'label')]);
 		switch (nodeType) {
 			case 'WIFI':
@@ -368,21 +380,22 @@ export const DashboardView = () => {
 				}]);
 				break;
 		}
-		if (nodeType !== 'FLOOR') items.push([<DeleteIcon />, 'Delete node', id => {
-			setShowConfirmAction(true);
-			setConfirmActionName('Delete');
-			setConfirmActionTitle('Delete node');
-			setConfirmActionQuestion(`Are you sure you want to delete node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
-			setConfirmAction(() => () => {
-				if (driver) {
-					const session = driver.session({ database });
-					session.run('MATCH (n {id: $id}) OPTIONAL MATCH (n)-[r]-() DELETE r, n', { id })
-						.then(() => { enqueueSnackbar('Node deleted successfully', { variant: 'success' }); })
-						.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
-						.finally(() => { session.close(); createGraphCallback(); });
-				}
-			});
-		}]);
+		if (nodeType !== 'FLOOR')
+			items.push([<DeleteIcon />, 'Delete node', id => {
+				setShowConfirmAction(true);
+				setConfirmActionName('Delete');
+				setConfirmActionTitle('Delete node');
+				setConfirmActionQuestion(`Are you sure you want to delete node (${sigma.getGraph().getNodeAttribute(id, 'label')})?`);
+				setConfirmAction(() => () => {
+					if (driver) {
+						const session = driver.session({ database });
+						session.run('MATCH (n {id: $id}) OPTIONAL MATCH (n)-[r]-() DELETE r, n', { id })
+							.then(() => { enqueueSnackbar('Node deleted successfully', { variant: 'success' }); })
+							.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+							.finally(() => { session.close(); createGraphCallback(); });
+					}
+				});
+			}]);
 		setMenu({
 			show: true,
 			node: e.node,
@@ -471,6 +484,51 @@ export const DashboardView = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+	const [foundPath, setFoundPath] = useState(false);
+	const findPathBetweenNodes = async (startNode: string, endNode: string) => {
+		if (driver) {
+			try {
+				const graph = new Graph();
+				const session = driver.session({ database });
+				const paths = await session.run('MATCH (n1 { id: $startNode }), (n2 { id: $endNode }), p = shortestPath((n1)-[*]-(n2)) RETURN p', { startNode, endNode });
+				paths.records.forEach(record => {
+					const segments = record.toObject().p.segments;
+					segments.forEach(({ relationship, start, end }: any) => {
+						const startNode = start.properties;
+						const endNode = end.properties;
+						const startNodeType: NodeType = start.labels[0].toUpperCase();
+						const endNodeType: NodeType = end.labels[0].toUpperCase();
+						const relationshipType: RelationType = relationship.type;
+						const relationshipActualStartNodeId = start.identity.low === relationship.start.low ? startNode.id : endNode.id;
+						const relationshipActualEndNodeId = start.identity.low === relationship.end.low ? startNode.id : endNode.id;
+						addNodeToGraph(startNode, startNodeType, graph);
+						addNodeToGraph(endNode, endNodeType, graph);
+						addEdgeToGraph(relationshipActualStartNodeId, relationshipActualEndNodeId, relationshipType, graph);
+					});
+				});
+				await session.close();
+				circlepack.assign(graph, { hierarchyAttributes: ['node_type'] });
+				const sensibleSettings = forceAtlas2.inferSettings(graph);
+				forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
+				forceAtlas2.assign(graph, 50);
+				new SpringSupervisor(graph, { isNodeFixed: (n) => graph.getNodeAttribute(n, "highlighted") }).start();
+				loadGraph(graph);
+				sigma.refresh();
+				setFoundPath(true);
+			} catch (__) {}
+		}
+	}
+	useEffect(() => {
+		if (startNode && endNode && isFindPath) {
+			findPathBetweenNodes(startNode, endNode);
+		} else {
+			if (foundPath || !isFindPath) {
+				setFoundPath(false);
+				createGraphCallback();
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [startNode, endNode, isFindPath]);
 	const [showAddNode, setShowAddNode] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 	const [showAttachWifiToBuilding, setShowAttachWifiToBuilding] = useState(false);

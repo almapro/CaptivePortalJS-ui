@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, Paper } from '@mui/material';
+import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, Paper, IconButton, Grid, Tooltip } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { FC, useContext, useState, useEffect } from 'react';
 import {
@@ -7,6 +7,7 @@ import {
 	Search as SearchIcon,
 	Add as AddIcon,
 	Settings as SettingsIcon,
+	Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
@@ -18,8 +19,9 @@ export type FloatingActionsProps = {
 }
 
 export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings }) => {
-	const { theme, search, setSearch, foundNode, setFoundNode } = useContext(appContext);
+	const { theme, search, setSearch, foundNode, setFoundNode, isFindPath, setIsFindPath, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch } = useContext(appContext);
 	const sigma = useSigma();
+	const graph = sigma.getGraph();
 	const useStyles = makeStyles({
 		floatingActionsBottom: {
 			position: 'absolute',
@@ -27,11 +29,12 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			bottom: theme.spacing(2),
 			right: theme.spacing(2),
 		},
-		floatingSearch: {
+		floatingSearchAndFind: {
 			position: 'absolute',
 			zIndex: theme.zIndex.appBar,
 			top: theme.spacing(2),
 			left: theme.spacing(2),
+			display: 'flex',
 		},
 		floatingActionsTop: {
 			position: 'absolute',
@@ -39,18 +42,11 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			top: theme.spacing(2),
 			right: theme.spacing(2),
 		},
-		paper: {
-			padding: theme.spacing(2),
-			height: `100%`,
-		},
-		divider: {
-			width: '100%',
-			height: '5px',
-			margin: '5px 0 !important',
-		},
 	});
 	const classes = useStyles();
 	const [values, setValues] = useState<{ id: string, label: string }[]>([]);
+	const [startValues, setStartValues] = useState<{ id: string, label: string }[]>([]);
+	const [endValues, setEndValues] = useState<{ id: string, label: string }[]>([]);
 	const findMatchingNodes = (searchString: string, graph: Graph) => {
 		const foundMatchingNodes: { id: string, label: string }[] = []
 		graph.forEachNode((id, attributes) => {
@@ -61,14 +57,31 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		return foundMatchingNodes;
 	}
 	useEffect(() => {
-		const graph = sigma.getGraph();
 		const newValues: { id: string, label: string }[] = [];
 		if (!foundNode && search.length > 0) {
 			newValues.push(...findMatchingNodes(search, graph));
 		}
 		setValues(newValues);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [search, sigma]);
+	}, [search]);
+	useEffect(() => {
+		const newValues: { id: string, label: string }[] = [];
+		if (!startNode && startNodeSearch.length > 0) {
+			newValues.push(...findMatchingNodes(startNodeSearch, graph));
+		}
+		if (endNode) setStartValues(newValues.filter(node => node.id !== endNode));
+		else setStartValues(newValues);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [startNodeSearch]);
+	useEffect(() => {
+		const newValues: { id: string, label: string }[] = [];
+		if (!endNode && endNodeSearch.length > 0) {
+			newValues.push(...findMatchingNodes(endNodeSearch, graph));
+		}
+		if (startNode) setEndValues(newValues.filter(node => node.id !== startNode));
+		else setEndValues(newValues);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [endNodeSearch]);
 	useEffect(() => {
 		if (!foundNode) return;
 		sigma.getGraph().setNodeAttribute(foundNode, 'highlighted', true);
@@ -95,6 +108,28 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			setSearch(searchString);
 		}
 	}
+	const handleStartNodeSearchChange = (searchString: string) => {
+		const valueItem = startValues.find(value => value.label === searchString);
+		if (valueItem) {
+			setStartNodeSearch(valueItem.label);
+			setStartValues([]);
+			setStartNode(valueItem.id);
+		} else {
+			setStartNode(null);
+			setStartNodeSearch(searchString);
+		}
+	}
+	const handleEndNodeSearchChange = (searchString: string) => {
+		const valueItem = endValues.find(value => value.label === searchString);
+		if (valueItem) {
+			setEndNodeSearch(valueItem.label);
+			setEndValues([]);
+			setEndNode(valueItem.id);
+		} else {
+			setEndNode(null);
+			setEndNodeSearch(searchString);
+		}
+	}
 	const handleZoomOut = () => {
 		sigma.getCamera().animatedUnzoom(2);
 	}
@@ -117,16 +152,44 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 					<Button onClick={handleZoomOut}><ZoomOutIcon /></Button>
 				</ButtonGroup>
 			</Box>
-			<Box className={classes.floatingSearch}>
-				<Paper>
-					<Autocomplete
-						disablePortal
-						options={values}
-						noOptionsText={search ===  '' ? 'Start typing to search' : foundNode ? 'Matched a node' : 'No match'}
-						onInputChange={(__, v) => handleSearchChange(v)}
-						sx={{ width: 300 }}
-						renderInput={(params) => <TextField {...params} label='Find a node' />} />
-				</Paper>
+			<Box className={classes.floatingSearchAndFind}>
+				<Grid container spacing={2} sx={{ width: 350 }}>
+					<Grid item xs={9} flexGrow={1} sx={{ '& .MuiTextField-root': { my: .5 }, px: .5 }}>
+						{!isFindPath && <Autocomplete
+							disablePortal
+							options={values}
+							inputValue={search}
+							onInputChange={(__, v) => handleSearchChange(v)}
+							noOptionsText={search ===  '' ? 'Start typing to search' : foundNode ? 'Matched a node' : 'No match'}
+							fullWidth
+							renderInput={(params) => <TextField {...params} onChange={e => handleSearchChange(e.target.value)} label='Find a node' />} />}
+						{isFindPath && <>
+							<Autocomplete
+								disablePortal
+								options={startValues}
+								inputValue={startNodeSearch}
+								onInputChange={(e, v) => { if (e && e.type === 'onChange') handleStartNodeSearchChange(v); }}
+								noOptionsText={startNodeSearch ===  '' ? 'Start typing to search' : startNode ? startNode === endNode ? 'Start node and end node are the same' : 'Matched a node' : 'No match'}
+								fullWidth
+								renderInput={(params) => <TextField {...params} onChange={e => handleStartNodeSearchChange(e.target.value)} label='Find a start node' />} />
+							<Autocomplete
+								disablePortal
+								options={endValues}
+								inputValue={endNodeSearch}
+								onInputChange={(e, v) => { if (e && e.type === 'onChange') handleEndNodeSearchChange(v); }}
+								noOptionsText={endNodeSearch ===  '' ? 'Start typing to search' : endNode ? startNode === endNode ? 'Start node and end node are the same' : 'Matched a node' : 'No match'}
+								fullWidth
+								renderInput={(params) => <TextField {...params} onChange={e => handleEndNodeSearchChange(e.target.value)} label='Find an end node' />} />
+						</>}
+					</Grid>
+					<Grid item container spacing={0} direction='column' justifyContent='start' alignItems='start' xs={3}>
+						<Tooltip title={`${isFindPath ? 'Disable' : 'Enable' } find path`} sx={{ my: 1 }}>
+							<IconButton size='large' color={isFindPath ? 'primary' : 'inherit'} onClick={() => setIsFindPath(!isFindPath)}>
+								<TimelineIcon />
+							</IconButton>
+						</Tooltip>
+					</Grid>
+				</Grid>
 			</Box>
 		</>
 	);
