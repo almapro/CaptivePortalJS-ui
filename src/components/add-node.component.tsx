@@ -8,7 +8,7 @@ import {
 } from "@mui/icons-material";
 import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
-import { useAddBuildingNode, useAddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
+import { AddBuildingNode, useAddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
 import EventEmitter from "events";
 
 export type AddNodeProps = {
@@ -69,18 +69,17 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		onDoneParent();
 		handleClose();
 	}
-	const addWifiNodeEventEmitter = new EventEmitter();
-	const [callAddBuildingNodeSubmit, AddBuildingNode] = useAddBuildingNode({ onDone, setHint, defaultHint });
+	const addNodeEventEmitter = new EventEmitter();
 	const [callAddHotspotNodeSubmit, AddHotspotNode] = useAddHotspotNode({ onDone });
 	const [callAddRouterNodeSubmit, AddRouterNode] = useAddRouterNode({ onDone });
 	const handleOnSubmit = (e: FormEvent) => {
 		e.preventDefault();
 		switch(nodeType) {
 			case 'WIFI':
-				addWifiNodeEventEmitter.emit('ADD_WIFI_NODE');
+				addNodeEventEmitter.emit('ADD_WIFI_NODE');
 				break;
 			case 'BUILDING':
-				callAddBuildingNodeSubmit();
+				addNodeEventEmitter.emit('ADD_BUILDING_NODE');
 				break;
 			case 'HOTSPOT':
 				callAddHotspotNodeSubmit();
@@ -121,8 +120,8 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 						</Grid>
 						{nodeType !== null && <Divider variant='middle' className={classes.divider} />}
 						<Grid item container spacing={1}>
-							{nodeType === 'WIFI' && <AddWifiNode onDone={onDone} eventEmitter={addWifiNodeEventEmitter} />}
-							{nodeType === 'BUILDING' && AddBuildingNode}
+							{nodeType === 'WIFI' && <AddWifiNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
+							{nodeType === 'BUILDING' && <AddBuildingNode onDone={onDone} setHint={setHint} defaultHint={defaultHint} eventEmitter={addNodeEventEmitter} />}
 							{nodeType === 'HOTSPOT' && AddHotspotNode}
 							{nodeType === 'ROUTER' && AddRouterNode}
 						</Grid>
