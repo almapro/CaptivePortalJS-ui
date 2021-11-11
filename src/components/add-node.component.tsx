@@ -8,7 +8,7 @@ import {
 } from "@mui/icons-material";
 import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
-import { AddBuildingNode, AddHotspotNode, useAddRouterNode, AddWifiNode } from "./add-node-components";
+import { AddBuildingNode, AddHotspotNode, AddRouterNode, AddWifiNode } from "./add-node-components";
 import EventEmitter from "events";
 
 export type AddNodeProps = {
@@ -70,7 +70,6 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		handleClose();
 	}
 	const addNodeEventEmitter = new EventEmitter();
-	const [callAddRouterNodeSubmit, AddRouterNode] = useAddRouterNode({ onDone });
 	const handleOnSubmit = (e: FormEvent) => {
 		e.preventDefault();
 		switch(nodeType) {
@@ -84,7 +83,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 				addNodeEventEmitter.emit('ADD_HOTSPOT_NODE');
 				break;
 			case 'ROUTER':
-				callAddRouterNodeSubmit();
+				addNodeEventEmitter.emit('ADD_ROUTER_NODE');
 				break;
 			default:
 				break;
@@ -122,7 +121,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 							{nodeType === 'WIFI' && <AddWifiNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
 							{nodeType === 'BUILDING' && <AddBuildingNode onDone={onDone} setHint={setHint} defaultHint={defaultHint} eventEmitter={addNodeEventEmitter} />}
 							{nodeType === 'HOTSPOT' && <AddHotspotNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
-							{nodeType === 'ROUTER' && AddRouterNode}
+							{nodeType === 'ROUTER' && <AddRouterNode onDone={onDone} eventEmitter={addNodeEventEmitter} />}
 						</Grid>
 					</Grid>
 				</DialogContent>

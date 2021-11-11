@@ -1,28 +1,18 @@
 import { Grid, Typography, TextField } from "@mui/material"
 import { makeStyles } from "@mui/styles"
+import EventEmitter from "events"
 import { Neo4jError, Session } from "neo4j-driver"
 import { useSnackbar } from "notistack"
-import { ChangeEvent, createRef, FC, FormEvent, Ref, useContext, useState } from "react"
+import { ChangeEvent, FC, useContext, useEffect, useState } from "react"
 import { v4 } from "uuid"
 import { appContext } from "../../App"
 
 export type AddRouterNodeProps = {
 	onDone: () => void
-	formRef: Ref<HTMLFormElement>
+	eventEmitter: EventEmitter
 }
 
-export const useAddRouterNode = ({ onDone }: Omit<AddRouterNodeProps, 'formRef'>): [() => void, JSX.Element] => {
-	const formRef = createRef<HTMLFormElement>();
-	const callSubmit = () => {
-		const form = formRef.current;
-		if (form) {
-			form.requestSubmit();
-		}
-	}
-	return [callSubmit, <AddRouterNode formRef={formRef} onDone={onDone} />];
-}
-
-export const AddRouterNode: FC<AddRouterNodeProps> = ({ onDone, formRef }) => {
+export const AddRouterNode: FC<AddRouterNodeProps> = ({ onDone, eventEmitter }) => {
 	const { enqueueSnackbar } = useSnackbar();
 	const { darkMode, driver, database } = useContext(appContext);
 	const [ip, setIp] = useState('');
@@ -57,28 +47,31 @@ export const AddRouterNode: FC<AddRouterNodeProps> = ({ onDone, formRef }) => {
 		await txr.commit();
 		await session.close();
 	}
-	const handleOnSubmit = async (e: FormEvent) => {
-		e.preventDefault();
-		if (driver) {
-			try {
-				await createRouter(driver.session({ database }));
-				enqueueSnackbar('Router node added successfuly', { variant: 'success' });
-				onDone();
-			} catch(e) {
-				enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+	useEffect(() => {
+		eventEmitter.on('ADD_ROUTER_NODE', async () => {
+			if (driver) {
+				try {
+					await createRouter(driver.session({ database }));
+					enqueueSnackbar('Router node added successfuly', { variant: 'success' });
+					onDone();
+				} catch(e) {
+					enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+				}
 			}
+		});
+		return () => {
+			eventEmitter.removeAllListeners('ADD_ROUTER_NODE');
 		}
-	}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ip, mac]);
 	return (
 		<>
 			<Grid item xs={12}>
 				<Typography variant='caption'>Router</Typography>
 			</Grid>
 			<Grid item xs={12} container>
-				<form ref={formRef} onSubmit={handleOnSubmit}>
-					<TextField required label='IP' className={classes.input} error={ipError} helperText={ipError ? 'IP address must be formatted properly' : ''} value={ip} onChange={handleIpChange} />
-					<TextField required label='MAC' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={macError} helperText={macError ? 'MAC address must be formatted properly' : ''} value={mac} onChange={handleMacChange} />
-				</form>
+				<TextField required label='IP' className={classes.input} error={ipError} helperText={ipError ? 'IP address must be formatted properly' : ''} value={ip} onChange={handleIpChange} />
+				<TextField required label='MAC' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={macError} helperText={macError ? 'MAC address must be formatted properly' : ''} value={mac} onChange={handleMacChange} />
 			</Grid>
 		</>
 	)
