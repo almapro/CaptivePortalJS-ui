@@ -12,7 +12,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -36,7 +36,7 @@ export type ClickNode = {
 	event: MouseCoords
 }
 
-export type RelationType = 'BROADCASTS' | 'ATTACHED_TO' | 'KNOWS' | 'OWNS' | 'HAS_FLOOR';
+export type RelationType = 'BROADCASTS' | 'ATTACHED_TO' | 'KNOWS' | 'OWNS' | 'HAS_FLOOR' | 'CONNECTS_TO';
 
 export type NodeStructure = {
 	id: string
@@ -125,7 +125,7 @@ export const DashboardView = () => {
 				break;
 			case 'CLIENT':
 				data.image = ClientSvgIcon;
-				data.label = node.mac ? `${node.ip} - ${node.mac}` : node.ip;
+				data.label = node.ip ? `${node.ip} - ${node.mac}` : node.mac;
 				data.ip = node.ip;
 				data.mac = node.mac;
 				break;
@@ -218,6 +218,29 @@ export const DashboardView = () => {
 				addNodeToGraph(floor, 'FLOOR', graph);
 				addEdgeToGraph(router.id, floor.id, 'ATTACHED_TO', graph);
 			});
+			const clients = await txc.run(`MATCH (c:Client) RETURN c`);
+			clients.records.forEach(async record => {
+				const client = record.toObject().c.properties;
+				addNodeToGraph(client, 'CLIENT', graph);
+			});
+			const clientsConnectToRouters = await txc.run(`MATCH r = (:Client)-[:CONNECTS_TO]-(:Router) RETURN r`);
+			clientsConnectToRouters.records.forEach(async record => {
+				const relation = record.toObject().r;
+				const client = relation.start.properties;
+				const router = relation.end.properties;
+				addNodeToGraph(client, 'CLIENT', graph);
+				addNodeToGraph(router, 'ROUTER', graph);
+				addEdgeToGraph(client.id, router.id, 'CONNECTS_TO', graph);
+			});
+			const clientsConnectToWifis = await txc.run(`MATCH r = (:Client)-[:CONNECTS_TO]-(:Wifi) RETURN r`);
+			clientsConnectToWifis.records.forEach(async record => {
+				const relation = record.toObject().r;
+				const client = relation.start.properties;
+				const wifi = relation.end.properties;
+				addNodeToGraph(client, 'CLIENT', graph);
+				addNodeToGraph(wifi, 'WIFI', graph);
+				addEdgeToGraph(client.id, wifi.id, 'CONNECTS_TO', graph);
+			});
 			circlepack.assign(graph, { hierarchyAttributes: ['node_type'] });
 			const sensibleSettings = forceAtlas2.inferSettings(graph);
 			forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
@@ -258,8 +281,10 @@ export const DashboardView = () => {
 						if (!wifiAttachedToBuilding) wifiAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
-				items.push([<AddIcon />, 'Add a client', async id => {
-					//
+				items.push([<AddIcon />, 'Add a client', id => {
+					setShowAddClientTo(true);
+					setAddClientToRouter(false);
+					setAddClientToId(id);
 				}]);
 				items.push([<UploadIcon />, 'Upload a handshake file', async id => {
 					//
@@ -315,8 +340,10 @@ export const DashboardView = () => {
 						if (!routerAttachedToBuilding) routerAttachedToBuilding = label === 'ATTACHED_TO' && (node_type === 'HOUSE' || node_type === 'FLOOR');
 					}
 				});
-				items.push([<AddIcon />, 'Add a client', async id => {
-					//
+				items.push([<AddIcon />, 'Add a client', id => {
+					setShowAddClientTo(true);
+					setAddClientToRouter(true);
+					setAddClientToId(id);
 				}]);
 				items.push([<HomeWorkIcon />, `${routerAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
@@ -456,6 +483,9 @@ export const DashboardView = () => {
 	const [confirmActionTitle, setConfirmActionTitle] = useState('');
 	const [confirmActionQuestion, setConfirmActionQuestion] = useState('');
 	const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+	const [showAddClientTo, setShowAddClientTo] = useState(false);
+	const [addClientToRouter, setAddClientToRouter] = useState(false);
+	const [addClientToId, setAddClientToId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -466,6 +496,7 @@ export const DashboardView = () => {
 			<AttachWifiToRouter wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToRouter} close={() => { setShowAttachWifiToRouter(false); setToBeAttachedWifiId(''); }}/>
 			<ConfirmAction close={() => { setShowConfirmAction(false); setConfirmAction(() => {}); }} actionName={confirmActionName} actionTitle={confirmActionTitle} actionQuestion={confirmActionQuestion} onConfirm={confirmAction} show={showConfirmAction} />
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
+			<AddClientTo toBeAddedToId={addClientToId} onDone={createGraphCallback} show={showAddClientTo} close={() => { setShowAddClientTo(false); setAddClientToId(''); }} addToRouter={addClientToRouter}/>
 		</>
 	)
 }

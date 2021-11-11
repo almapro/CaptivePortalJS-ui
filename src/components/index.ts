@@ -9,3 +9,4 @@ export * from './attach-wifi-to-router.component';
 export * from './settings.component';
 export * from './confirm-action.component';
 export * from './attach-router-to-building.component';
+export * from './add-client-to.component';
