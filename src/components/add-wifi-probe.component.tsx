@@ -69,7 +69,7 @@ export const AddWifiProbe: FC<AddWifiProbeProps> = ({ show, close, onDone, clien
 				const newWifis: any[] = [];
 				const session = driver.session({ database });
 				const txc = session.beginTransaction();
-				txc.run(`MATCH (w) WHERE w:Wifi OR w:WifiProbe RETURN w`).then(result => {
+				txc.run(`MATCH (c { id: $clientId }), (w) WHERE (w:Wifi OR w:WifiProbe) AND NOT (c)-[:CONNECTS_TO]-(w) AND NOT (c)-[:KNOWS]-(w) RETURN w`, { clientId }).then(result => {
 					result.records.forEach(async record => {
 						const wifi = record.toObject().w.properties;
 						newWifis.push(wifi);
