@@ -144,9 +144,9 @@ export const DashboardView = () => {
 			graph.addNode(node.id, data);
 		}
 	}
-	const addEdgeToGraph = (source: string, destination: string, label: RelationType, graph: Graph) => {
+	const addEdgeToGraph = (source: string, destination: string, label: RelationType, graph: Graph, data: any = {}) => {
 		if (!graph.hasEdge(source, destination)) {
-			graph.addEdge(source, destination, { label });
+			graph.addEdge(source, destination, { label, ...data });
 		}
 	}
 	const createGraph = async () => {
