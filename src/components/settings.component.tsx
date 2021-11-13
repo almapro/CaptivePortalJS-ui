@@ -72,7 +72,8 @@ export const Settings: FC<SettingsProps> = ({ show, close }) => {
 			<DialogTitle>Settings</DialogTitle>
 			<DialogContent>
 				<FormControlLabel
-					control={<ThemeModeSwitch onClick={toggleDarkMode} sx={{ m: 1 }} checked={darkMode} />}
+					sx={{ m: 0 }}
+					control={<ThemeModeSwitch onClick={toggleDarkMode} checked={darkMode} />}
 					label='Dark mode'
 					labelPlacement='start' />
 			</DialogContent>
