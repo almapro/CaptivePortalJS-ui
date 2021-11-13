@@ -7,6 +7,7 @@ import {
 	Flag as FlagIcon,
 	PinDrop as PinDropIcon,
 	Wifi as WifiIcon,
+    SignalWifiBad as SignalWifiBadIcon,
 } from '@mui/icons-material';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
@@ -15,7 +16,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -406,6 +407,10 @@ export const DashboardView = () => {
 					setShowAddWifiProbe(true);
 					setAddWifiProbeClientId(id);
 				}]);
+				if (!foundPath) items.push([<SignalWifiBadIcon />, 'Remove wifi probe', id => {
+					setShowRemoveWifiProbe(true);
+					setRemoveWifiProbeClientId(id);
+				}]);
 				break;
 		}
 		if (nodeType !== 'FLOOR')
@@ -585,6 +590,8 @@ export const DashboardView = () => {
 	const [addClientToId, setAddClientToId] = useState('');
 	const [showAddWifiProbe, setShowAddWifiProbe] = useState(false);
 	const [addWifiProbeClientId, setAddWifiProbeClientId] = useState('');
+	const [showRemoveWifiProbe, setShowRemoveWifiProbe] = useState(false);
+	const [removeWifiProbeClientId, setRemoveWifiProbeClientId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -597,6 +604,7 @@ export const DashboardView = () => {
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
 			<AddClientTo toBeAddedToId={addClientToId} onDone={createGraphCallback} show={showAddClientTo} close={() => { setShowAddClientTo(false); setAddClientToId(''); }} addToRouter={addClientToRouter}/>
 			<AddWifiProbe show={showAddWifiProbe} onDone={createGraphCallback} close={() => { setShowAddWifiProbe(false); setAddWifiProbeClientId(''); }} clientId={addWifiProbeClientId} />
+			<RemoveWifiProbe show={showRemoveWifiProbe} onDone={createGraphCallback} close={() => { setShowRemoveWifiProbe(false); setRemoveWifiProbeClientId(''); }} clientId={removeWifiProbeClientId} />
 		</>
 	)
 }

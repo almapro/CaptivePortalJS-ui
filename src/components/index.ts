@@ -11,3 +11,4 @@ export * from './confirm-action.component';
 export * from './attach-router-to-building.component';
 export * from './add-client-to.component';
 export * from './add-wifi-probe.component';
+export * from './remove-wifi-probe.component';
