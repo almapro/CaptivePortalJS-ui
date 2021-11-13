@@ -142,14 +142,14 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 	return (
 		<>
 			<Box className={classes.floatingActionsTop} display='grid' rowGap={2}>
-				<Fab color='secondary' onClick={showSettings}><SettingsIcon /></Fab>
-				<Fab color='secondary' onClick={showAddNode}><AddIcon /></Fab>
+				<Tooltip placement='left' title='Settings'><Fab color='secondary' onClick={showSettings}><SettingsIcon /></Fab></Tooltip>
+				<Tooltip placement='left' title='Add a node'><Fab color='secondary' onClick={showAddNode}><AddIcon /></Fab></Tooltip>
 			</Box>
 			<Box className={classes.floatingActionsBottom}>
 				<ButtonGroup orientation='vertical' color='secondary' variant='contained'>
-					<Button onClick={handleZoomIn}><ZoomInIcon /></Button>
-					<Button onClick={handleZoomReset}><SearchIcon /></Button>
-					<Button onClick={handleZoomOut}><ZoomOutIcon /></Button>
+					<Tooltip placement='left' title='Zoom in'><Button onClick={handleZoomIn}><ZoomInIcon /></Button></Tooltip>
+					<Tooltip placement='left' title='Reset zoom'><Button onClick={handleZoomReset}><SearchIcon /></Button></Tooltip>
+					<Tooltip placement='left' title='Zoom out'><Button onClick={handleZoomOut}><ZoomOutIcon /></Button></Tooltip>
 				</ButtonGroup>
 			</Box>
 			<Box className={classes.floatingSearchAndFind}>
