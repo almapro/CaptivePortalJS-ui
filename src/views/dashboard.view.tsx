@@ -16,7 +16,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -367,6 +367,12 @@ export const DashboardView = () => {
 					}
 				}]);
 				break;
+			case 'WIFIPROBE':
+				if (!foundPath) items.push([<WifiIcon />, 'Convert to wifi station', id => {
+					setShowConvertWifiProbe(true);
+					setConvertWifiProbeProbeId(id);
+				}]);
+				break;
 			case 'ROUTER':
 				let routerAttachedToBuilding = false;
 				edgesEndpoints.forEach(([extremities, label]) => {
@@ -592,6 +598,8 @@ export const DashboardView = () => {
 	const [addWifiProbeClientId, setAddWifiProbeClientId] = useState('');
 	const [showRemoveWifiProbe, setShowRemoveWifiProbe] = useState(false);
 	const [removeWifiProbeClientId, setRemoveWifiProbeClientId] = useState('');
+	const [showConvertWifiProbe, setShowConvertWifiProbe] = useState(false);
+	const [convertWifiProbeProbeId, setConvertWifiProbeProbeId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -605,6 +613,7 @@ export const DashboardView = () => {
 			<AddClientTo toBeAddedToId={addClientToId} onDone={createGraphCallback} show={showAddClientTo} close={() => { setShowAddClientTo(false); setAddClientToId(''); }} addToRouter={addClientToRouter}/>
 			<AddWifiProbe show={showAddWifiProbe} onDone={createGraphCallback} close={() => { setShowAddWifiProbe(false); setAddWifiProbeClientId(''); }} clientId={addWifiProbeClientId} />
 			<RemoveWifiProbe show={showRemoveWifiProbe} onDone={createGraphCallback} close={() => { setShowRemoveWifiProbe(false); setRemoveWifiProbeClientId(''); }} clientId={removeWifiProbeClientId} />
+			<ConvertWifiProbeToStation show={showConvertWifiProbe} onDone={createGraphCallback} close={() => { setShowConvertWifiProbe(false); setConvertWifiProbeProbeId(''); }} probeId={convertWifiProbeProbeId} />
 		</>
 	)
 }
