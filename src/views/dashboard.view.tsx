@@ -6,6 +6,7 @@ import {
     Router as RouterIcon,
 	Flag as FlagIcon,
 	PinDrop as PinDropIcon,
+	Wifi as WifiIcon,
 } from '@mui/icons-material';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
@@ -14,7 +15,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -31,6 +32,7 @@ import ClientSvgIcon from '../images/Client.svg';
 import BuildingSvgIcon from '../images/Building.svg';
 import HouseSvgIcon from '../images/House.svg';
 import FloorSvgIcon from '../images/Floor.svg';
+import WifiProbeSvgIcon from '../images/PermScanWifi.svg';
 
 export type ClickNode = {
 	node: string
@@ -102,6 +104,11 @@ export const DashboardView = () => {
 				data.essid = node.essid;
 				data.bssid = node.bssid;
 				break;
+			case 'WIFIPROBE':
+				data.image = WifiProbeSvgIcon;
+				data.label = node.essid;
+				data.essid = node.essid;
+				break;
 			case 'HOTSPOT':
 				data.image = HotspotSvgIcon;
 				data.label = `${node.essid} - ${node.bssid}`;
@@ -155,6 +162,20 @@ export const DashboardView = () => {
 			hotspots.records.forEach(async record => {
 				const hotspot = record.toObject().h.properties;
 				addNodeToGraph(hotspot, 'HOTSPOT', graph);
+			});
+			const wifiProbes = await txc.run(`MATCH (w:WifiProbe) RETURN w`);
+			wifiProbes.records.forEach(async record => {
+				const wifiProbe = record.toObject().w.properties;
+				addNodeToGraph(wifiProbe, 'WIFIPROBE', graph);
+			});
+			const clientsKnowWifiProbes = await txc.run(`MATCH r = (:Client)-[:KNOWS]-(:WifiProbe) RETURN r`);
+			clientsKnowWifiProbes.records.forEach(async record => {
+				const relation = record.toObject().r;
+				const client = relation.start.properties;
+				const wifiProbe = relation.end.properties;
+				addNodeToGraph(client, 'CLIENT', graph);
+				addNodeToGraph(wifiProbe, 'WIFIPROBE', graph);
+				addEdgeToGraph(client.id, wifiProbe.id, 'KNOWS', graph);
 			});
 			const wifisAttachedToHouses = await txc.run(`MATCH r = (:Wifi)-[:ATTACHED_TO]-(:Building) RETURN r`);
 			wifisAttachedToHouses.records.forEach(async record => {
@@ -380,6 +401,12 @@ export const DashboardView = () => {
 					}
 				}]);
 				break;
+			case 'CLIENT':
+				if (!foundPath) items.push([<WifiIcon />, 'Add a wifi probe', id => {
+					setShowAddWifiProbe(true);
+					setAddWifiProbeClientId(id);
+				}]);
+				break;
 		}
 		if (nodeType !== 'FLOOR')
 			items.push([<DeleteIcon />, 'Delete node', id => {
@@ -458,16 +485,18 @@ export const DashboardView = () => {
 				image: getNodeProgramImage(),
 			},
 			nodeReducer: (node, data) => {
-				const graph = sigma.getGraph();
 				const newData: Attributes = { ...data, highlighted: data.highlighted || false, size: 15 };
-				if (hoveredNode && !mouseMove) {
-					if (node === hoveredNode || graph.neighbors(hoveredNode).includes(node)) {
-						newData.highlighted = true;
-					} else {
-						newData.color = `#121212`;
-						newData.highlighted = false;
+				try {
+					const graph = sigma.getGraph();
+					if (hoveredNode && !mouseMove) {
+						if (node === hoveredNode || graph.neighbors(hoveredNode).includes(node)) {
+							newData.highlighted = true;
+						} else {
+							newData.color = `#121212`;
+							newData.highlighted = false;
+						}
 					}
-				}
+				} catch(__) {}
 				return newData;
 			},
 			edgeReducer: (edge, data) => {
@@ -554,6 +583,8 @@ export const DashboardView = () => {
 	const [showAddClientTo, setShowAddClientTo] = useState(false);
 	const [addClientToRouter, setAddClientToRouter] = useState(false);
 	const [addClientToId, setAddClientToId] = useState('');
+	const [showAddWifiProbe, setShowAddWifiProbe] = useState(false);
+	const [addWifiProbeClientId, setAddWifiProbeClientId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -565,6 +596,7 @@ export const DashboardView = () => {
 			<ConfirmAction close={() => { setShowConfirmAction(false); setConfirmAction(() => {}); }} actionName={confirmActionName} actionTitle={confirmActionTitle} actionQuestion={confirmActionQuestion} onConfirm={confirmAction} show={showConfirmAction} />
 			<ContextMenu open={menu.show} closeMenu={() => setMenu({ ...menu, show: false })} node={menu.node} x={menu.x} y={menu.y} items={menu.items} />
 			<AddClientTo toBeAddedToId={addClientToId} onDone={createGraphCallback} show={showAddClientTo} close={() => { setShowAddClientTo(false); setAddClientToId(''); }} addToRouter={addClientToRouter}/>
+			<AddWifiProbe show={showAddWifiProbe} onDone={createGraphCallback} close={() => { setShowAddWifiProbe(false); setAddWifiProbeClientId(''); }} clientId={addWifiProbeClientId} />
 		</>
 	)
 }

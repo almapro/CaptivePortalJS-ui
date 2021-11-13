@@ -19,7 +19,7 @@ export type AddNodeProps = {
 
 export type FileOperationType = 'UPLOAD' | 'DOWNLOAD' | 'DELETE';
 
-export type NodeType = 'WIFI' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'HOUSE' | 'FLOOR';
+export type NodeType = 'WIFI' | 'WIFIPROBE' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'HOUSE' | 'FLOOR';
 
 export type WithHintComponent = {
 	setHint: (hint: string) => void
