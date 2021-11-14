@@ -169,6 +169,7 @@ const App = () => {
 				await txc.run('CREATE INDEX wifi_essid IF NOT EXISTS FOR (n:Wifi) ON (n.essid)');
 				await txc.run('CREATE INDEX wifi_bssid IF NOT EXISTS FOR (n:Wifi) ON (n.bssid)');
 				await txc.run('CREATE INDEX wifi_probe_essid IF NOT EXISTS FOR (n:WifiProbe) ON (n.essid)');
+				await txc.run('CREATE INDEX wifi_handshake_filename IF NOT EXISTS FOR (n:WifiHandshake) ON (n.name)');
 				await txc.run('CREATE INDEX client_ip IF NOT EXISTS FOR (n:Client) ON (n.ip)');
 				await txc.run('CREATE INDEX client_mac IF NOT EXISTS FOR (n:Client) ON (n.mac)');
 				await txc.run('CREATE INDEX client_type IF NOT EXISTS FOR (n:Client) ON (n.type)');
@@ -187,6 +188,7 @@ const App = () => {
 				await txc.run('CREATE CONSTRAINT router_id IF NOT EXISTS ON (n:Router) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT wifi_id IF NOT EXISTS ON (n:Wifi) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT wifi_probe_id IF NOT EXISTS ON (n:WifiProbe) ASSERT n.id IS UNIQUE');
+				await txc.run('CREATE CONSTRAINT wifi_handshake_id IF NOT EXISTS ON (n:WifiHandshake) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT client_id IF NOT EXISTS ON (n:Client) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT hotspot_id IF NOT EXISTS ON (n:Hotspot) ASSERT n.id IS UNIQUE');
 				await txc.run('CREATE CONSTRAINT network_id IF NOT EXISTS ON (n:Network) ASSERT n.id IS UNIQUE');
@@ -206,6 +208,7 @@ const App = () => {
 				await txc.run('DROP INDEX wifi_essid IF EXISTS');
 				await txc.run('DROP INDEX wifi_bssid IF EXISTS');
 				await txc.run('DROP INDEX wifi_probe_essid IF EXISTS');
+				await txc.run('DROP INDEX wifi_handshake_filename IF EXISTS');
 				await txc.run('DROP INDEX client_ip IF EXISTS');
 				await txc.run('DROP INDEX client_mac IF EXISTS');
 				await txc.run('DROP INDEX client_type IF EXISTS');
@@ -224,6 +227,7 @@ const App = () => {
 				await txc.run('DROP CONSTRAINT router_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT wifi_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT wifi_probe_id IF EXISTS');
+				await txc.run('DROP CONSTRAINT wifi_handshake_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT client_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT hotspot_id IF EXISTS');
 				await txc.run('DROP CONSTRAINT network_id IF EXISTS');

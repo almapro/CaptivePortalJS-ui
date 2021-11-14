@@ -16,7 +16,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation, UploadWifiHandshake } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -104,6 +104,7 @@ export const DashboardView = () => {
 				data.label = `${node.essid} - ${node.bssid}`;
 				data.essid = node.essid;
 				data.bssid = node.bssid;
+				data.handshakes = node.handshakes;
 				break;
 			case 'WIFIPROBE':
 				data.image = WifiProbeSvgIcon;
@@ -157,6 +158,12 @@ export const DashboardView = () => {
 			const wifis = await txc.run(`MATCH (w:Wifi) RETURN w`);
 			wifis.records.forEach(async record => {
 				const wifi = record.toObject().w.properties;
+				wifi.handshakes = [];
+				const handshakes = await txc.run('MATCH (w { id: $id })-[:HAS_HANDSHAKE]-(h) RETURN h', { id: wifi.id });
+				handshakes.records.forEach(hr => {
+					const handshake = hr.toObject().h.properties;
+					wifi.handshakes.push(handshake);
+				});
 				addNodeToGraph(wifi, 'WIFI', graph);
 			});
 			const hotspots = await txc.run(`MATCH (h:Hotspot) RETURN h`);
@@ -321,8 +328,9 @@ export const DashboardView = () => {
 					setAddClientToRouter(false);
 					setAddClientToId(id);
 				}]);
-				items.push([<UploadIcon />, 'Upload a handshake file', async id => {
-					//
+				items.push([<UploadIcon />, 'Upload a handshake file', id => {
+					setShowUploadWifiHandshake(true);
+					setUploadWifiHandshakeWifiId(id);
 				}]);
 				if (!foundPath) items.push([<HomeWorkIcon />, `${wifiAttachedToBuilding ?  'Deattach from' : 'Attach to'} a building`, async id => {
 					if (driver) {
@@ -600,6 +608,8 @@ export const DashboardView = () => {
 	const [removeWifiProbeClientId, setRemoveWifiProbeClientId] = useState('');
 	const [showConvertWifiProbe, setShowConvertWifiProbe] = useState(false);
 	const [convertWifiProbeProbeId, setConvertWifiProbeProbeId] = useState('');
+	const [showUploadWifiHandshake, setShowUploadWifiHandshake] = useState(false);
+	const [uploadWifiHandshakeWifiId, setUploadWifiHandshakeWifiId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -614,6 +624,7 @@ export const DashboardView = () => {
 			<AddWifiProbe show={showAddWifiProbe} onDone={createGraphCallback} close={() => { setShowAddWifiProbe(false); setAddWifiProbeClientId(''); }} clientId={addWifiProbeClientId} />
 			<RemoveWifiProbe show={showRemoveWifiProbe} onDone={createGraphCallback} close={() => { setShowRemoveWifiProbe(false); setRemoveWifiProbeClientId(''); }} clientId={removeWifiProbeClientId} />
 			<ConvertWifiProbeToStation show={showConvertWifiProbe} onDone={createGraphCallback} close={() => { setShowConvertWifiProbe(false); setConvertWifiProbeProbeId(''); }} probeId={convertWifiProbeProbeId} />
+			<UploadWifiHandshake show={showUploadWifiHandshake} onDone={createGraphCallback} close={() => { setShowUploadWifiHandshake(false); setUploadWifiHandshakeWifiId(''); }} wifiId={uploadWifiHandshakeWifiId} />
 		</>
 	)
 }
