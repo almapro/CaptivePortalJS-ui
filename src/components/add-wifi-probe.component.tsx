@@ -144,7 +144,7 @@ export const AddWifiProbe: FC<AddWifiProbeProps> = ({ show, close, onDone, clien
 				</DialogContent>
 				<DialogActions style={{ padding: theme.spacing(3) }}>
 					<Button color='inherit' onClick={handleClose}>Cancel</Button>
-					<Button variant='contained' color='primary' disabled={wifiType === 'EXISTING' && rid === '' || wifiType === 'NEW' && essid === ''} type='submit'>Add</Button>
+					<Button variant='contained' color='primary' disabled={(wifiType === 'EXISTING' && rid === '') || (wifiType === 'NEW' && essid === '')} type='submit'>Add</Button>
 				</DialogActions>
 			</form>
 		</Dialog>

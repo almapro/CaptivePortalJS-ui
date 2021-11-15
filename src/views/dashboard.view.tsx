@@ -451,7 +451,7 @@ export const DashboardView = () => {
 			items,
 		});
 	}
-	const handleNodeRightClickCallback = useCallback(handleNodeRightClick, [setMenu, driver, sigma, enqueueSnackbar, createGraphCallback, database, foundPath]);
+	const handleNodeRightClickCallback = useCallback(handleNodeRightClick, [setMenu, driver, sigma, enqueueSnackbar, createGraphCallback, database, foundPath, setEndNode, setEndNodeSearch, setIsFindPath, setStartNode, setStartNodeSearch]);
 	useEffect(() => {
 		sigma.addListener('rightClickNode', handleNodeRightClickCallback);
 		return () => {
