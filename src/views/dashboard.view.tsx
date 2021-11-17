@@ -54,12 +54,12 @@ export const DashboardView = () => {
 	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
-	setSigma(sigma);
 	const [mouseMove, setMouseMove] = useState(false);
 	/**
 	 * Drag'n'Drop
 	 */
 	useEffect(() => {
+		setSigma(sigma);
 		let isDragging = false;
 		let draggedNode = '';
 		sigma.on('downNode', ({ node }) => {
