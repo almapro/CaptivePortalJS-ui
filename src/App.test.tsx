@@ -1,7 +1,7 @@
 import { shallow } from 'enzyme';
 import App from './App';
 
-test('renders learn react link', () => {
+test('App renders correctly', () => {
   const app = shallow(<App />);
   expect(app).toMatchSnapshot();
 });
