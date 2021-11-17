@@ -1,5 +1,5 @@
 import { shallow } from 'enzyme';
-import App from './App';
+import App from '../App';
 
 test('App renders correctly', () => {
   const app = shallow(<App />);
