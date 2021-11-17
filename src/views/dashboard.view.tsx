@@ -16,7 +16,7 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, NodeType, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation, UploadWifiHandshake } from '../components';
+import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation, UploadWifiHandshake } from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -40,6 +40,8 @@ export type ClickNode = {
 	captor: Captor
 	event: MouseCoords
 }
+
+export type NodeType = 'WIFI' | 'WIFIPROBE' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'HOUSE' | 'FLOOR';
 
 export type RelationType = 'BROADCASTS' | 'ATTACHED_TO' | 'KNOWS' | 'OWNS' | 'HAS_FLOOR' | 'CONNECTS_TO';
 

@@ -8,6 +8,7 @@ import {
 } from "@mui/icons-material";
 import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
+import { NodeType } from "../views";
 import { AddBuildingNode, AddHotspotNode, AddRouterNode, AddWifiNode } from "./add-node-components";
 import EventEmitter from "events";
 
@@ -16,10 +17,6 @@ export type AddNodeProps = {
 	close: () => void
 	onDone: () => void
 }
-
-export type FileOperationType = 'UPLOAD' | 'DOWNLOAD' | 'DELETE';
-
-export type NodeType = 'WIFI' | 'WIFIPROBE' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'HOUSE' | 'FLOOR';
 
 export type WithHintComponent = {
 	setHint: (hint: string) => void

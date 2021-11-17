@@ -10,7 +10,7 @@ import { v4 } from "uuid";
 import { Session, Neo4jError } from 'neo4j-driver';
 import { useSnackbar } from "notistack"
 import { useSigma } from "react-sigma-v2/lib/esm";
-import { NodeType } from "./add-node.component";
+import { NodeType } from "../views";
 
 export type AddWifiProbeProps = {
 	show: boolean
