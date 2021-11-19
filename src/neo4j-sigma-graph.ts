@@ -32,53 +32,54 @@ export class Neo4jSigmaGraph {
 
   getGraph = () => this.graph;
 
-  addNodeToGraph = (node: any, node_type: NodeType) => {
+  addNodeToGraph = (node: Node) => {
+    const node_type = node.labels[0].toUpperCase() as NodeType;
     const data: any = { node_type, type: 'image' };
     switch (node_type) {
       case 'WIFI':
         data.image = WifiSvgIcon;
-        data.label = `${node.essid} - ${node.bssid}`;
-        data.essid = node.essid;
-        data.bssid = node.bssid;
-        data.handshakes = node.handshakes;
+        data.label = `${node.properties.essid} - ${node.properties.bssid}`;
+        data.essid = node.properties.essid;
+        data.bssid = node.properties.bssid;
+        data.handshakes = node.properties.handshakes;
         break;
       case 'WIFIPROBE':
         data.image = WifiProbeSvgIcon;
-        data.label = node.essid;
-        data.essid = node.essid;
+        data.label = node.properties.essid;
+        data.essid = node.properties.essid;
         break;
       case 'HOTSPOT':
         data.image = HotspotSvgIcon;
-        data.label = `${node.essid} - ${node.bssid}`;
-        data.essid = node.essid;
-        data.bssid = node.bssid;
+        data.label = `${node.properties.essid} - ${node.properties.bssid}`;
+        data.essid = node.properties.essid;
+        data.bssid = node.properties.bssid;
         break;
       case 'BUILDING':
       case 'HOUSE':
         data.image = node_type === 'BUILDING' ? BuildingSvgIcon : HouseSvgIcon;
-        data.label = node.name;
-        data.name = node.name;
+        data.label = node.properties.name;
+        data.name = node.properties.name;
         break;
       case 'FLOOR':
         data.image = FloorSvgIcon;
-        data.label = `Floor ${node.number}`;
-        data.number = node.number;
+        data.label = `Floor ${node.properties.number}`;
+        data.number = node.properties.number;
         break;
       case 'ROUTER':
         data.image = RouterSvgIcon;
-        data.label = `${node.ip} - ${node.mac}`;
-        data.ip = node.ip;
-        data.mac = node.mac;
+        data.label = `${node.properties.ip} - ${node.properties.mac}`;
+        data.ip = node.properties.ip;
+        data.mac = node.properties.mac;
         break;
       case 'CLIENT':
         data.image = ClientSvgIcon;
-        data.label = node.ip ? `${node.ip} - ${node.mac}` : node.mac;
-        data.ip = node.ip;
-        data.mac = node.mac;
+        data.label = node.properties.ip ? `${node.properties.ip} - ${node.properties.mac}` : node.properties.mac;
+        data.ip = node.properties.ip;
+        data.mac = node.properties.mac;
         break;
     }
-    if (!this.graph.hasNode(node.id)) {
-      this.graph.addNode(node.id, data);
+    if (!this.graph.hasNode(node.properties.id)) {
+      this.graph.addNode(node.properties.id, data);
     }
   }
 

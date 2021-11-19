@@ -1,36 +1,44 @@
 import Graph from "graphology";
 import _ from "lodash";
 import { liveToStored, mockSessionFromQuerySet, QuerySpec, storedToLive, wrapCopiedResults } from "neo-forgery";
-import { Driver } from "neo4j-driver";
+import { Driver, int, Node } from "neo4j-driver";
 import { Neo4jSigmaGraph, NodeType } from "../neo4j-sigma-graph";
 
 describe('Neo4jSigmaGraph', () => {
 	let neo4jSigmaGraph = new Neo4jSigmaGraph(new Graph(), ({} as Driver));
-	const nodes = [
+	const nodes: Node[] = [
 		{
-			id: '0',
-			essid: '0',
-			bssid: '0'
+			identity: int(0),
+			labels: ['Wifi'],
+			properties: {
+				id: '0',
+				essid: '0',
+				bssid: '0'
+			}
 		},
 		{
-			id: '1',
-			ip: '1',
-			mac: '1'
+			identity: int(1),
+			labels: ['Router'],
+			properties: {
+				id: '1',
+				ip: '1',
+				mac: '1'
+			}
 		}
 	];
 	beforeEach(() => {
 		neo4jSigmaGraph.getGraph().clear();
 	});
 	test('should add node to graph', () => {
-		neo4jSigmaGraph.addNodeToGraph(nodes[0], 'WIFI');
-		neo4jSigmaGraph.addNodeToGraph(nodes[1], 'ROUTER');
+		neo4jSigmaGraph.addNodeToGraph(nodes[0]);
+		neo4jSigmaGraph.addNodeToGraph(nodes[1]);
 		expect(neo4jSigmaGraph.getGraph().nodes()).toEqual(['0', '1']);
 		expect(neo4jSigmaGraph.getGraph().getNodeAttribute('0', 'node_type')).toBe('WIFI');
 		expect(neo4jSigmaGraph.getGraph().getNodeAttribute('1', 'node_type')).toBe('ROUTER');
 	});
 	test('should add edge to graph', () => {
-		neo4jSigmaGraph.addNodeToGraph(nodes[0], 'WIFI');
-		neo4jSigmaGraph.addNodeToGraph(nodes[1], 'ROUTER');
+		neo4jSigmaGraph.addNodeToGraph(nodes[0]);
+		neo4jSigmaGraph.addNodeToGraph(nodes[1]);
 		const edge = neo4jSigmaGraph.addEdgeToGraph('1', '0', 'BROADCASTS');
 		expect(neo4jSigmaGraph.getGraph().hasEdge(edge)).toBeTruthy();
 		expect(neo4jSigmaGraph.getGraph().getEdgeAttribute(edge, 'label')).toBe('BROADCASTS');
