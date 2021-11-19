@@ -1,6 +1,6 @@
 import Graph from "graphology";
 import _ from "lodash";
-import { Driver, Node, Path, Relationship, Session, SessionMode } from "neo4j-driver";
+import { Driver, Node, Path, Session, SessionMode } from "neo4j-driver";
 import RouterSvgIcon from './images/Router.svg';
 import WifiSvgIcon from './images/Wifi.svg';
 import HotspotSvgIcon from './images/Hotspot.svg';
@@ -24,13 +24,14 @@ export type SessionOptions = {
 export class Neo4jSigmaGraph {
   constructor(
     private graph: Graph,
-    private driver: Driver,
+    private driver: Driver | null,
     private sessionOptions?: SessionOptions,
   ) {}
 
-  generateSession = () => this.driver.session(this.sessionOptions);
+  generateSession = () => this.driver ? this.driver.session(this.sessionOptions) : null;
 
   getGraph = () => this.graph;
+  setGraph = (graph: Graph) => this.graph = graph;
 
   addNodeToGraph = (node: Node) => {
     const node_type = node.labels[0].toUpperCase() as NodeType;
@@ -83,37 +84,49 @@ export class Neo4jSigmaGraph {
     }
   }
 
-  addRelationPathToGraph = (relationPath: Path, data: any = {}) => {
-    const source = relationPath.start.properties.id;
-    const destination = relationPath.end.properties.id;
-    const label = relationPath.segments[0].relationship.type.toUpperCase();
-    return !this.graph.hasEdge(source, destination) ? this.graph.addEdge(source, destination, { label, ...data }) : this.graph.edge(source, destination);
+  addRelationPathToGraph = (path: Path, data: any = {}) => {
+    path.segments.forEach(({ relationship, start, end }) => {
+      const startNode = start.properties;
+      const endNode = end.properties;
+      const relationshipType = relationship.type as RelationType;
+      const relationshipActualStartNodeId = start.identity.low === relationship.start.low ? startNode.id : endNode.id;
+      const relationshipActualEndNodeId = start.identity.low === relationship.end.low ? startNode.id : endNode.id;
+      this.addNodeToGraph(start);
+      this.addNodeToGraph(end);
+      if (!this.graph.hasEdge(relationshipActualStartNodeId, relationshipActualEndNodeId)) {
+        this.graph.addEdge(relationshipActualStartNodeId, relationshipActualEndNodeId, { label: relationshipType, ...data });
+      }
+    });
   }
 
   getNodesByLabel = async (label: NodeType, _session?: Session): Promise<Node[]> => {
     const session = _session ?? this.generateSession();
-    const result = await session.run(`MATCH (n:${_.capitalize(label)}) RETURN n`);
+    if (!session) return [];
+    const result = await session.run(`MATCH (n:${_.capitalize(label.toLowerCase())}) RETURN n`);
     await session.close();
     return result.records.map(record => record.toObject().n);
   }
 
   getNodeById = async (nodeId: string, _session?: Session): Promise<Node | undefined> => {
     const session = _session ?? this.generateSession();
+    if (!session) return undefined;
     const result = await session.run('MATCH (n { id: $nodeId }) RETURN n', { nodeId });
     await session.close();
     return result.records.length ? result.records[0].toObject().n : undefined;
   }
 
-  getNodeRelations = async (nodeId: string, _session?: Session): Promise<[Path, Relationship][]> => {
+  getNodeRelations = async (nodeId: string, _session?: Session): Promise<Path[]> => {
     const session = _session ?? this.generateSession();
-    const result = await session.run('MATCH r1 = ({ id: $nodeId })-[]-() RETURN r1, relationships(r1) as r2', { nodeId });
-    const relations: [Path, Relationship][] = result.records.map(record => [record.toObject().r1, record.toObject().r2]);
+    if (!session) return [];
+    const result = await session.run('MATCH p = ({ id: $nodeId })-[]-() RETURN p', { nodeId });
+    const relations: Path[] = result.records.map(record => record.toObject().p);
     await session.close();
     return relations;
   }
 
-  getNodesShortestPath = async (startNodeId: string, endNodeId: string, _session: Session): Promise<Path[]> => {
+  getNodesShortestPath = async (startNodeId: string, endNodeId: string, _session?: Session): Promise<Path[]> => {
     const session = _session ?? this.generateSession();
+    if (!session) return [];
     const paths = await session.run('MATCH p = shortestPath((n1 { id: $startNodeId })-[*]-(n2 { id: $endNodeId })) RETURN p', { startNodeId, endNodeId });
     return paths.records.map(record => record.toObject().p);
   }

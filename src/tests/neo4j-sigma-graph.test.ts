@@ -52,10 +52,9 @@ describe('Neo4jSigmaGraph', () => {
 				}
 			}
 		];
-		const relationPath: Path = { start: nodes[0], end: nodes[1], segments: pathSegments, length: 1 };
-		const edge = neo4jSigmaGraph.addRelationPathToGraph(relationPath);
-		expect(neo4jSigmaGraph.getGraph().hasEdge(edge)).toBeTruthy();
-		expect(neo4jSigmaGraph.getGraph().getEdgeAttribute(edge, 'label')).toBe('BROADCASTS');
+		const path: Path = { start: nodes[0], end: nodes[1], segments: pathSegments, length: 1 };
+		neo4jSigmaGraph.addRelationPathToGraph(path);
+		expect(neo4jSigmaGraph.getGraph().edges().length).toBe(1);
 	});
 	test('should get nodes by label', async () => {
 		const label: NodeType = 'WIFI';
@@ -194,7 +193,7 @@ describe('Neo4jSigmaGraph', () => {
 		const querySet: QuerySpec[] = [
 			{
 				name: 'nodes',
-				query: `MATCH (n:${_.capitalize(label)}) RETURN n`,
+				query: `MATCH (n:${_.capitalize(label.toLowerCase())}) RETURN n`,
 				output: expected,
 			}
 		];
@@ -248,10 +247,9 @@ describe('Neo4jSigmaGraph', () => {
 		const expected = wrapCopiedResults([
 			{
 				"keys": [
-					"r1",
-					"r2"
+					"p",
 				],
-				"length": 2,
+				"length": 1,
 				"_fields": [
 					{
 						"start": {
@@ -333,42 +331,23 @@ describe('Neo4jSigmaGraph', () => {
 							"low": 1
 						}
 					},
-					[
-						{
-							"identity": {
-								"low": 22,
-								"high": 0
-							},
-							"start": {
-								"low": 50,
-								"high": 0
-							},
-							"end": {
-								"low": 12,
-								"high": 0
-							},
-							"type": "CONNECTS_TO",
-							"properties": {}
-						}
-					]
 				],
 				"_fieldLookup": {
-					"r1": 0,
-					"r2": 1
+					"p": 0,
 				}
 			}
 		]);
 		const querySet: QuerySpec[] = [
 			{
-				name: 'wifis',
-				query: 'MATCH r1 = ({ id: $nodeId })-[]-() RETURN r1, relationships(r1) as r2',
+				name: 'relations',
+				query: 'MATCH p = ({ id: $nodeId })-[]-() RETURN p',
 				params: { nodeId },
 				output: expected
 			}
 		];
 		const session = mockSessionFromQuerySet(querySet);
 		const result = await neo4jSigmaGraph.getNodeRelations(nodeId, session);
-		expect(liveToStored(result[0])).toEqual(expected.records[0]._fields);
+		expect(liveToStored(result)).toEqual(expected.records[0]._fields);
 	});
 	test('should get nodes shortest path', async () => {
 		const startNodeId = 'e6b02058-41a2-4fae-832e-4df39f0d79c2';
