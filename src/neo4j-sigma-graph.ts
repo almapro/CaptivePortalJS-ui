@@ -118,7 +118,7 @@ export class Neo4jSigmaGraph {
   getNodeRelations = async (nodeId: string, _session?: Session): Promise<Path[]> => {
     const session = _session ?? this.generateSession();
     if (!session) return [];
-    const result = await session.run('MATCH p = ({ id: $nodeId })-[]-() RETURN p', { nodeId });
+    const result = await session.run('MATCH p = ({ id: $nodeId })-[r]-() WHERE NOT r:HAS_HANDSHAKE RETURN p', { nodeId });
     const relations: Path[] = result.records.map(record => record.toObject().p);
     await session.close();
     return relations;

@@ -340,7 +340,7 @@ describe('Neo4jSigmaGraph', () => {
 		const querySet: QuerySpec[] = [
 			{
 				name: 'relations',
-				query: 'MATCH p = ({ id: $nodeId })-[]-() RETURN p',
+				query: 'MATCH p = ({ id: $nodeId })-[r]-() WHERE NOT r:HAS_HANDSHAKE RETURN p',
 				params: { nodeId },
 				output: expected
 			}
