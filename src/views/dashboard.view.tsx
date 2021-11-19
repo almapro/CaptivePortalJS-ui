@@ -18,23 +18,14 @@ import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
 import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation, UploadWifiHandshake } from '../components';
 import { Attributes } from 'graphology-types';
-import { useSigma, useSetSettings, useLoadGraph, useRegisterEvents } from 'react-sigma-v2';
+import { useSigma, useSetSettings, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
-import Graph from 'graphology';
 import { useSnackbar } from "notistack"
 import _ from 'lodash';
-import { Neo4jError } from 'neo4j-driver';
+import { Neo4jError, Node } from 'neo4j-driver';
 import { SpringSupervisor } from '../layout-spring';
-import RouterSvgIcon from '../images/Router.svg';
-import WifiSvgIcon from '../images/Wifi.svg';
-import HotspotSvgIcon from '../images/Hotspot.svg';
-import ClientSvgIcon from '../images/Client.svg';
-import BuildingSvgIcon from '../images/Building.svg';
-import HouseSvgIcon from '../images/House.svg';
-import FloorSvgIcon from '../images/Floor.svg';
-import WifiProbeSvgIcon from '../images/PermScanWifi.svg';
-import { NodeType, RelationType } from '../neo4j-sigma-graph';
+import { Neo4jSigmaGraph, NodeType } from '../neo4j-sigma-graph';
 
 export type ClickNode = {
 	node: string
@@ -47,6 +38,7 @@ export const DashboardView = () => {
 	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
+	const [neo4jSigmaGraph, setNeo4jSigmaGraph] = useState(new Neo4jSigmaGraph(sigma.getGraph(), driver, { database }));
 	const [mouseMove, setMouseMove] = useState(false);
 	/**
 	 * Drag'n'Drop
@@ -88,194 +80,29 @@ export const DashboardView = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 	const setSigmaSettings = useSetSettings();
-	const loadGraph = useLoadGraph();
-	const addNodeToGraph = (node: any, node_type: NodeType, graph: Graph) => {
-		const data: any = { node_type, type: 'image' };
-		switch (node_type) {
-			case 'WIFI':
-				data.image = WifiSvgIcon;
-				data.label = `${node.essid} - ${node.bssid}`;
-				data.essid = node.essid;
-				data.bssid = node.bssid;
-				data.handshakes = node.handshakes;
-				break;
-			case 'WIFIPROBE':
-				data.image = WifiProbeSvgIcon;
-				data.label = node.essid;
-				data.essid = node.essid;
-				break;
-			case 'HOTSPOT':
-				data.image = HotspotSvgIcon;
-				data.label = `${node.essid} - ${node.bssid}`;
-				data.essid = node.essid;
-				data.bssid = node.bssid;
-				break;
-			case 'BUILDING':
-			case 'HOUSE':
-				data.image = node_type === 'BUILDING' ? BuildingSvgIcon : HouseSvgIcon;
-				data.label = node.name;
-				data.name = node.name;
-				break;
-			case 'FLOOR':
-				data.image = FloorSvgIcon;
-				data.label = `Floor ${node.number}`;
-				data.number = node.number;
-				break;
-			case 'ROUTER':
-				data.image = RouterSvgIcon;
-				data.label = `${node.ip} - ${node.mac}`;
-				data.ip = node.ip;
-				data.mac = node.mac;
-				break;
-			case 'CLIENT':
-				data.image = ClientSvgIcon;
-				data.label = node.ip ? `${node.ip} - ${node.mac}` : node.mac;
-				data.ip = node.ip;
-				data.mac = node.mac;
-				break;
-		}
-		if (!graph.hasNode(node.id)) {
-			graph.addNode(node.id, data);
-		}
-	}
-	const addEdgeToGraph = (source: string, destination: string, label: RelationType, graph: Graph, data: any = {}) => {
-		if (!graph.hasEdge(source, destination)) {
-			graph.addEdge(source, destination, { label, ...data });
-		}
-	}
 	const createGraph = async () => {
-		if (driver) {
-			const graph = new Graph();
-			const session = driver.session({ database });
-			const txc = session.beginTransaction();
-			const wifis = await txc.run(`MATCH (w:Wifi) RETURN w`);
-			wifis.records.forEach(async record => {
-				const wifi = record.toObject().w.properties;
-				wifi.handshakes = [];
-				const handshakes = await txc.run('MATCH (w { id: $id })-[:HAS_HANDSHAKE]-(h) RETURN h', { id: wifi.id });
-				handshakes.records.forEach(hr => {
-					const handshake = hr.toObject().h.properties;
-					wifi.handshakes.push(handshake);
-				});
-				addNodeToGraph(wifi, 'WIFI', graph);
-			});
-			const hotspots = await txc.run(`MATCH (h:Hotspot) RETURN h`);
-			hotspots.records.forEach(async record => {
-				const hotspot = record.toObject().h.properties;
-				addNodeToGraph(hotspot, 'HOTSPOT', graph);
-			});
-			const wifiProbes = await txc.run(`MATCH (w:WifiProbe) RETURN w`);
-			wifiProbes.records.forEach(async record => {
-				const wifiProbe = record.toObject().w.properties;
-				addNodeToGraph(wifiProbe, 'WIFIPROBE', graph);
-			});
-			const clientsKnowWifiProbes = await txc.run(`MATCH r = (:Client)-[:KNOWS]-(:WifiProbe) RETURN r`);
-			clientsKnowWifiProbes.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const client = relation.start.properties;
-				const wifiProbe = relation.end.properties;
-				addNodeToGraph(client, 'CLIENT', graph);
-				addNodeToGraph(wifiProbe, 'WIFIPROBE', graph);
-				addEdgeToGraph(client.id, wifiProbe.id, 'KNOWS', graph);
-			});
-			const wifisAttachedToHouses = await txc.run(`MATCH r = (:Wifi)-[:ATTACHED_TO]-(:Building) RETURN r`);
-			wifisAttachedToHouses.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const wifi = relation.start.properties;
-				const house = relation.end.properties;
-				addNodeToGraph(wifi, 'WIFI', graph);
-				addNodeToGraph(house, 'HOUSE', graph);
-				addEdgeToGraph(wifi.id, house.id, 'ATTACHED_TO', graph);
-			});
-			const wifisAttachedToFloors = await txc.run(`MATCH r = (:Wifi)-[:ATTACHED_TO]-(:Floor) RETURN r`);
-			wifisAttachedToFloors.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const wifi = relation.start.properties;
-				const floor = relation.end.properties;
-				addNodeToGraph(wifi, 'WIFI', graph);
-				addNodeToGraph(floor, 'FLOOR', graph);
-				addEdgeToGraph(wifi.id, floor.id, 'ATTACHED_TO', graph);
-			});
-			const buildingsHasFloor = await txc.run(`MATCH r = (:Building)-[:HAS_FLOOR]-(:Floor) RETURN r`);
-			buildingsHasFloor.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const building = relation.start.properties;
-				const floor = relation.end.properties;
-				addNodeToGraph(building, 'BUILDING', graph);
-				addNodeToGraph(floor, 'FLOOR', graph);
-				addEdgeToGraph(building.id, floor.id, 'HAS_FLOOR', graph);
-			});
-			const houses = await txc.run(`MATCH (h:Building { type: 'HOUSE' }) RETURN h`);
-			houses.records.forEach(async record => {
-				const house = record.toObject().h.properties;
-				addNodeToGraph(house, 'HOUSE', graph);
-			});
-			const routers = await txc.run(`MATCH (r:Router) RETURN r`);
-			routers.records.forEach(async record => {
-				const router = record.toObject().r.properties;
-				addNodeToGraph(router, 'ROUTER', graph);
-			});
-			const routersBroadcastWifis = await txc.run(`MATCH r = (:Router)-[:BROADCASTS]-(:Wifi) RETURN r`);
-			routersBroadcastWifis.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const router = relation.start.properties;
-				const wifi = relation.end.properties;
-				addNodeToGraph(router, 'ROUTER', graph);
-				addNodeToGraph(wifi, 'WIFI', graph);
-				addEdgeToGraph(router.id, wifi.id, 'BROADCASTS', graph);
-			});
-			const routersAttachedToHouses = await txc.run(`MATCH r = (:Router)-[:ATTACHED_TO]-(:Building) RETURN r`);
-			routersAttachedToHouses.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const router = relation.start.properties;
-				const house = relation.end.properties;
-				addNodeToGraph(router, 'ROUTER', graph);
-				addNodeToGraph(house, 'HOUSE', graph);
-				addEdgeToGraph(router.id, house.id, 'ATTACHED_TO', graph);
-			});
-			const routersAttachedToFloors = await txc.run(`MATCH r = (:Router)-[:ATTACHED_TO]-(:Floor) RETURN r`);
-			routersAttachedToFloors.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const router = relation.start.properties;
-				const floor = relation.end.properties;
-				addNodeToGraph(router, 'ROUTER', graph);
-				addNodeToGraph(floor, 'FLOOR', graph);
-				addEdgeToGraph(router.id, floor.id, 'ATTACHED_TO', graph);
-			});
-			const clients = await txc.run(`MATCH (c:Client) RETURN c`);
-			clients.records.forEach(async record => {
-				const client = record.toObject().c.properties;
-				addNodeToGraph(client, 'CLIENT', graph);
-			});
-			const clientsConnectToRouters = await txc.run(`MATCH r = (:Client)-[:CONNECTS_TO]-(:Router) RETURN r`);
-			clientsConnectToRouters.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const client = relation.start.properties;
-				const router = relation.end.properties;
-				addNodeToGraph(client, 'CLIENT', graph);
-				addNodeToGraph(router, 'ROUTER', graph);
-				addEdgeToGraph(client.id, router.id, 'CONNECTS_TO', graph);
-			});
-			const clientsConnectToWifis = await txc.run(`MATCH r = (:Client)-[:CONNECTS_TO]-(:Wifi) RETURN r`);
-			clientsConnectToWifis.records.forEach(async record => {
-				const relation = record.toObject().r;
-				const client = relation.start.properties;
-				const wifi = relation.end.properties;
-				addNodeToGraph(client, 'CLIENT', graph);
-				addNodeToGraph(wifi, 'WIFI', graph);
-				addEdgeToGraph(client.id, wifi.id, 'CONNECTS_TO', graph);
-			});
-			circlepack.assign(graph, { hierarchyAttributes: ['node_type'] });
-			const sensibleSettings = forceAtlas2.inferSettings(graph);
-			forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
-			forceAtlas2.assign(graph, 50);
-			new SpringSupervisor(graph, { isNodeFixed: (n) => graph.getNodeAttribute(n, "highlighted") }).start();
-			await session.close();
-			loadGraph(graph);
-			sigma.refresh();
+		const graph = sigma.getGraph();
+		neo4jSigmaGraph.setGraph(graph);
+		const addNodeAndRelationsPaths = async (node: Node) => {
+			neo4jSigmaGraph.addNodeToGraph(node);
+			const paths = await neo4jSigmaGraph.getNodeRelations(node.properties.id);
+			paths.forEach(neo4jSigmaGraph.addRelationPathToGraph);
 		}
+		(await neo4jSigmaGraph.getNodesByLabel('WIFI')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('ROUTER')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('CLIENT')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('BUILDING')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('FLOOR')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('HOTSPOT')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('HOUSE')).forEach(node => addNodeAndRelationsPaths(node));
+		(await neo4jSigmaGraph.getNodesByLabel('WIFIPROBE')).forEach(node => addNodeAndRelationsPaths(node));
+		circlepack.assign(neo4jSigmaGraph.getGraph(), { hierarchyAttributes: ['node_type'] });
+		const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
+		forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
+		new SpringSupervisor(neo4jSigmaGraph.getGraph(), { isNodeFixed: (n) => neo4jSigmaGraph.getGraph().getNodeAttribute(n, "highlighted") }).start();
+		sigma.refresh();
 	}
-	const createGraphCallback = useCallback(createGraph, [loadGraph, driver,  database, sigma]);
+	const createGraphCallback = useCallback(createGraph, [neo4jSigmaGraph]);
 	const [menu, setMenu] = useState<{
 		show: boolean,
 		node: string,
@@ -483,6 +310,12 @@ export const DashboardView = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 	useEffect(() => {
+		if (driver) {
+			setNeo4jSigmaGraph(new Neo4jSigmaGraph(sigma.getGraph(), driver, { database }));
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [driver]);
+	useEffect(() => {
 		setSigmaSettings({
 			defaultNodeType: 'image',
 			defaultEdgeColor: theme.palette.primary.main,
@@ -535,35 +368,19 @@ export const DashboardView = () => {
 	const findPathBetweenNodes = async (startNode: string, endNode: string) => {
 		if (driver) {
 			try {
-				const graph = new Graph();
-				const session = driver.session({ database });
-				const paths = await session.run('MATCH (n1 { id: $startNode }), (n2 { id: $endNode }), p = shortestPath((n1)-[*]-(n2)) RETURN p', { startNode, endNode });
-				if (paths.records.length === 0) {
+				const graph = sigma.getGraph();
+				neo4jSigmaGraph.setGraph(graph);
+				neo4jSigmaGraph.getGraph().clear();
+				const paths = await neo4jSigmaGraph.getNodesShortestPath(startNode, endNode);
+				if (paths.length === 0) {
 					enqueueSnackbar(`There's no path between (${startNodeSearch}) and (${endNodeSearch})`, { variant: 'warning' });
 					return;
 				}
-				paths.records.forEach(record => {
-					const segments = record.toObject().p.segments;
-					segments.forEach(({ relationship, start, end }: any) => {
-						const startNode = start.properties;
-						const endNode = end.properties;
-						const startNodeType: NodeType = start.labels[0].toUpperCase();
-						const endNodeType: NodeType = end.labels[0].toUpperCase();
-						const relationshipType: RelationType = relationship.type;
-						const relationshipActualStartNodeId = start.identity.low === relationship.start.low ? startNode.id : endNode.id;
-						const relationshipActualEndNodeId = start.identity.low === relationship.end.low ? startNode.id : endNode.id;
-						addNodeToGraph(startNode, startNodeType, graph);
-						addNodeToGraph(endNode, endNodeType, graph);
-						addEdgeToGraph(relationshipActualStartNodeId, relationshipActualEndNodeId, relationshipType, graph);
-					});
-				});
-				await session.close();
-				circlepack.assign(graph, { hierarchyAttributes: ['node_type'] });
-				const sensibleSettings = forceAtlas2.inferSettings(graph);
-				forceAtlas2(graph, { iterations: 50, settings: sensibleSettings });
-				forceAtlas2.assign(graph, 50);
-				new SpringSupervisor(graph, { isNodeFixed: (n) => graph.getNodeAttribute(n, "highlighted") }).start();
-				loadGraph(graph);
+				paths.forEach(neo4jSigmaGraph.addRelationPathToGraph);
+				circlepack.assign(neo4jSigmaGraph.getGraph(), { hierarchyAttributes: ['node_type'] });
+				const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
+				forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
+				new SpringSupervisor(neo4jSigmaGraph.getGraph(), { isNodeFixed: (n) => neo4jSigmaGraph.getGraph().getNodeAttribute(n, "highlighted") }).start();
 				sigma.refresh();
 				setFoundPath(true);
 			} catch (__) {}
