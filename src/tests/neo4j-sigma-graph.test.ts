@@ -1,7 +1,7 @@
 import Graph from "graphology";
 import _ from "lodash";
 import { liveToStored, mockSessionFromQuerySet, QuerySpec, storedToLive, wrapCopiedResults } from "neo-forgery";
-import { Driver, int, Node } from "neo4j-driver";
+import { Driver, int, Node, Path, PathSegment } from "neo4j-driver";
 import { Neo4jSigmaGraph, NodeType } from "../neo4j-sigma-graph";
 
 describe('Neo4jSigmaGraph', () => {
@@ -36,10 +36,24 @@ describe('Neo4jSigmaGraph', () => {
 		expect(neo4jSigmaGraph.getGraph().getNodeAttribute('0', 'node_type')).toBe('WIFI');
 		expect(neo4jSigmaGraph.getGraph().getNodeAttribute('1', 'node_type')).toBe('ROUTER');
 	});
-	test('should add edge to graph', () => {
+	test('should add relation path to graph', () => {
 		neo4jSigmaGraph.addNodeToGraph(nodes[0]);
 		neo4jSigmaGraph.addNodeToGraph(nodes[1]);
-		const edge = neo4jSigmaGraph.addEdgeToGraph('1', '0', 'BROADCASTS');
+		const pathSegments: PathSegment[] = [
+			{
+				start: nodes[0],
+				end: nodes[1],
+				relationship: {
+					properties: {},
+					identity: int(2),
+					start: nodes[0].identity,
+					end: nodes[1].identity,
+					type: 'BROADCASTS'
+				}
+			}
+		];
+		const relationPath: Path = { start: nodes[0], end: nodes[1], segments: pathSegments, length: 1 };
+		const edge = neo4jSigmaGraph.addRelationPathToGraph(relationPath);
 		expect(neo4jSigmaGraph.getGraph().hasEdge(edge)).toBeTruthy();
 		expect(neo4jSigmaGraph.getGraph().getEdgeAttribute(edge, 'label')).toBe('BROADCASTS');
 	});

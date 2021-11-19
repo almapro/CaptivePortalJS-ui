@@ -83,7 +83,10 @@ export class Neo4jSigmaGraph {
     }
   }
 
-  addEdgeToGraph = (source: string, destination: string, label: RelationType, data: any = {}) => {
+  addRelationPathToGraph = (relationPath: Path, data: any = {}) => {
+    const source = relationPath.start.properties.id;
+    const destination = relationPath.end.properties.id;
+    const label = relationPath.segments[0].relationship.type.toUpperCase();
     return !this.graph.hasEdge(source, destination) ? this.graph.addEdge(source, destination, { label, ...data }) : this.graph.edge(source, destination);
   }
 
