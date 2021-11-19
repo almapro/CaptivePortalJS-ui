@@ -34,21 +34,12 @@ import BuildingSvgIcon from '../images/Building.svg';
 import HouseSvgIcon from '../images/House.svg';
 import FloorSvgIcon from '../images/Floor.svg';
 import WifiProbeSvgIcon from '../images/PermScanWifi.svg';
+import { NodeType, RelationType } from '../neo4j-sigma-graph';
 
 export type ClickNode = {
 	node: string
 	captor: Captor
 	event: MouseCoords
-}
-
-export type NodeType = 'WIFI' | 'WIFIPROBE' | 'CLIENT' | 'ROUTER' | 'SERVER' | 'NETWORK' | 'HOTSPOT' | 'SERVICE' | 'RELATION' | 'BUILDING' | 'HOUSE' | 'FLOOR';
-
-export type RelationType = 'BROADCASTS' | 'ATTACHED_TO' | 'KNOWS' | 'OWNS' | 'HAS_FLOOR' | 'CONNECTS_TO';
-
-export type NodeStructure = {
-	id: string
-	node_type: NodeType
-	label: string
 }
 
 export const DashboardView = () => {

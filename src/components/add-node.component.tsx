@@ -8,7 +8,7 @@ import {
 } from "@mui/icons-material";
 import { FC, FormEvent, useContext, useState } from "react";
 import { appContext } from "../App";
-import { NodeType } from "../views";
+import { NodeType } from "../neo4j-sigma-graph";
 import { AddBuildingNode, AddHotspotNode, AddRouterNode, AddWifiNode } from "./add-node-components";
 import EventEmitter from "events";
 
