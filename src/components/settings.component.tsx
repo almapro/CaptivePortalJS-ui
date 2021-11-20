@@ -1,10 +1,25 @@
-import { Grid, Dialog, DialogTitle, DialogContent, DialogActions, Button, Switch, FormControlLabel } from "@mui/material"
-import { FC, useContext } from "react"
+import {
+	Grid,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Button,
+	Switch,
+	FormControlLabel,
+	Divider,
+	Checkbox,
+	FormGroup,
+	Box,
+} from "@mui/material"
+import { FC, useContext, useState, useCallback } from "react"
 import { appContext } from "../App"
 import {
 	Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { FileType } from "../global.d";
+import { useSnackbar } from "notistack";
 
 export type SettingsProps = {
 	show: boolean
@@ -59,24 +74,66 @@ export const ThemeModeSwitch = styled(Switch)(({ theme }) => ({
 }));
 
 export const Settings: FC<SettingsProps> = ({ show, close }) => {
-	const { darkMode, toggleDarkMode, setDriver, setDatabase, setConnected, driver, theme } = useContext(appContext);
+	const { enqueueSnackbar } = useSnackbar();
+	const { darkMode, toggleDarkMode, setDriver, setDatabase, setConnected, driver, theme, database } = useContext(appContext);
 	const disconnect = async () => {
 		await driver?.close();
 		setDriver(null);
 		setDatabase('');
 		setConnected(false);
 	}
+	const [filesTypes, setFilesTypes] = useState<{ [key in FileType]: boolean }>({ 'handshakes': false, 'pictures': false });
+	const deleteUsedFiles = async () => {
+		if (driver) {
+			const session = driver.session({ database });
+			const trx = session.beginTransaction();
+			let clearedNothing = true;
+			if (filesTypes['handshakes']) {
+				const result = await trx.run('MATCH (h:WifiHandshake) RETURN h');
+				const count = await window.files.clearUnused('handshakes', result.records.map(record => record.toObject().h));
+				setFilesTypes(prev => ({ ...prev, 'handshakes': false }));
+				if (count) {
+					clearedNothing = false;
+					enqueueSnackbar(`Cleared ${count} unused handshakes`, { variant: 'success' });
+				}
+			}
+			if (filesTypes['pictures']) {
+				const result = await trx.run('MATCH (p:ProfilePicture) RETURN p');
+				const count = await window.files.clearUnused('pictures', result.records.map(record => record.toObject().p));
+				setFilesTypes(prev => ({ ...prev, 'pictures': false }));
+				if (count) {
+					clearedNothing = false;
+					enqueueSnackbar(`Cleared ${count} unused pictures`, { variant: 'success' });
+				}
+			}
+			if (clearedNothing) enqueueSnackbar('Nothing to be cleared', { variant: 'info' });
+			await session.close();
+		}
+	}
+	const deleteUsedFilesCallback = useCallback(deleteUsedFiles, [driver, filesTypes, setFilesTypes, database, enqueueSnackbar]);
 	if (!show) return null;
 	return (
 		<Dialog open={show} fullWidth maxWidth='sm'>
 			<DialogTitle>Settings</DialogTitle>
+			<Divider variant='middle' />
 			<DialogContent>
 				<FormControlLabel
 					sx={{ m: 0 }}
 					control={<ThemeModeSwitch onClick={toggleDarkMode} checked={darkMode} />}
 					label='Dark mode'
 					labelPlacement='start' />
+				<Box sx={{ mt: 2 }}>
+					Clear unused:
+					<Box sx={{ pl: 4 }}>
+						<FormGroup>
+							<FormControlLabel control={<Checkbox size='small' checked={filesTypes['handshakes']} onChange={() => setFilesTypes(prev => ({ ...prev, 'handshakes': !prev['handshakes'] }))} />} label="Hanshakes" />
+							<FormControlLabel control={<Checkbox size='small' checked={filesTypes['pictures']} onChange={() => setFilesTypes(prev => ({ ...prev, 'pictures': !prev['pictures'] }))} />} label="Pictures" />
+						</FormGroup>
+						<Button onClick={deleteUsedFilesCallback} size='small' variant='contained' disabled={!filesTypes['handshakes'] && !filesTypes['pictures']}>Clear</Button>
+					</Box>
+				</Box>
 			</DialogContent>
+			<Divider variant='middle' />
 			<DialogActions style={{ padding: theme.spacing(3) }}>
 				<Grid container>
 					<Grid item flexGrow={1}>

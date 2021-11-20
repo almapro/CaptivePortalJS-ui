@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
 
-type FileType = 'handshakes' | 'pictures';
+export type FileType = 'handshakes' | 'pictures';
 
 declare global {
 	interface Window {
@@ -14,6 +14,7 @@ declare global {
 			upload: (nodeId: string, fileType: FileType, filename: string, content: any) => string
 			list: (nodeId: string, filesType: FileType) => string[]
 			delete: (nodeId: string, fileType: FileType, filename: string) => void
+			clearUnused: (filesType: FileType, files: any[]) => Pomise<number>
 		}
 	}
 }
