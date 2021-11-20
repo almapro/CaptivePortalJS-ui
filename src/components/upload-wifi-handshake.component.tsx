@@ -5,12 +5,14 @@ import { appContext } from "../App"
 import { useSigma } from "react-sigma-v2/lib/esm"
 import { v4 } from "uuid";
 import { Neo4jError } from "neo4j-driver";
+
 export type UploadWifiHandshakeProps = {
 	show: boolean
 	close: () => void
 	wifiId: string
 	onDone: () => void
 }
+
 export const UploadWifiHandshake: FC<UploadWifiHandshakeProps> = ({ show, close, onDone, wifiId }) => {
 	const { enqueueSnackbar } = useSnackbar();
 	const { theme, driver, database } = useContext(appContext);
