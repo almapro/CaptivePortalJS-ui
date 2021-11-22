@@ -42,6 +42,7 @@ export class Neo4jSigmaGraph {
         data.label = `${node.properties.essid} - ${node.properties.bssid}`;
         data.essid = node.properties.essid;
         data.bssid = node.properties.bssid;
+        data.password = node.properties.password;
         data.handshakes = node.properties.handshakes;
         break;
       case 'WIFIPROBE':
