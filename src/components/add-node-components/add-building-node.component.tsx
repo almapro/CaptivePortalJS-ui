@@ -1,4 +1,4 @@
-import { Grid, Typography, TextField, Card, CardActionArea, CardContent } from "@mui/material"
+import { Grid, TextField, Card, CardActionArea, CardContent } from "@mui/material"
 import { makeStyles } from "@mui/styles"
 import neo4j, { Neo4jError, Session } from "neo4j-driver"
 import { useSnackbar } from "notistack"
@@ -75,9 +75,6 @@ export const AddBuildingNode: FC<AddBuildingNodeProps> = ({ onDone, eventEmitter
 	}, [floors, buildingType, name]);
 	return (
 		<>
-			<Grid item xs={12}>
-				<Typography variant='caption'>Building</Typography>
-			</Grid>
 			<Grid item xs={12} container>
 				<Grid item container xs={12} spacing={1}>
 					<Grid item onMouseOver={() => setHint('A multi floor building (ex: Apartment, office building, ..etc)')} onMouseOut={() => setHint(defaultHint)}>

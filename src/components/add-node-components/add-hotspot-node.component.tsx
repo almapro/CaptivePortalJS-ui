@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Grid, Typography, TextField } from "@mui/material"
+import { Grid, TextField } from "@mui/material"
 import { makeStyles } from "@mui/styles"
 import { Neo4jError, Session } from "neo4j-driver"
 import { useSnackbar } from "notistack"
@@ -63,9 +63,6 @@ export const AddHotspotNode: FC<AddHotspotNodeProps> = ({ onDone, eventEmitter }
 	}, [essid, bssid, password]);
 	return (
 		<>
-			<Grid item xs={12}>
-				<Typography variant='caption'>Hotspot</Typography>
-			</Grid>
 			<Grid item xs={12} container>
 				<TextField required label='ESSID' className={classes.input} value={essid} onChange={e => setEssid(e.target.value)} />
 				<TextField required label='BSSID' placeholder='xx:xx:xx:xx:xx:xx' className={classes.input} error={bssidError} helperText={bssidError ? 'BSSID must be formatted properly' : ''} value={bssid} onChange={handleBssidChange} />
