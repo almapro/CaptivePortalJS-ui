@@ -43,7 +43,7 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		[<HomeWorkIcon />, 'Building', 'BUILDING', 'A building might be an apartment with floors or a house'],
 		[<WifiIcon />, 'Wifi', 'WIFI', 'A wifi access point'],
 		[<WifiTetheringIcon />, 'Hotspot', 'HOTSPOT', 'An internet sharing hotspot'],
-		[<RouterIcon />, 'Router', 'ROUTER', 'A gateway for a wifi or a hotspot'],
+		[<RouterIcon />, 'Router', 'ROUTER', 'A router node with one or more network interfaces'],
 	];
 	const defaultHint = 'Hover over choices to get a hint';
 	const [hint, setHint] = useState(defaultHint);
