@@ -12,6 +12,7 @@ import {
 	ExpandMore as ExpandMoreIcon,
 	Visibility as VisibilityIcon,
 	VisibilityOff as VisibilityOffIcon,
+	Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
@@ -256,6 +257,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			<Box className={classes.floatingActionsTop} display='grid' rowGap={2}>
 				<Tooltip placement='left' title='Settings'><Fab color='secondary' onClick={showSettings}><SettingsIcon /></Fab></Tooltip>
 				<Tooltip placement='left' title='Add a node'><Fab color='secondary' onClick={showAddNode}><AddIcon /></Fab></Tooltip>
+				<Tooltip placement='left' title='Refresh'><Fab color='secondary' onClick={() => sigma.refresh()}><RefreshIcon /></Fab></Tooltip>
 			</Box>
 			<Box className={classes.floatingActionsBottom}>
 				<ButtonGroup orientation='vertical' color='secondary' variant='contained'>
