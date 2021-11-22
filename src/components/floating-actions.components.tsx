@@ -231,6 +231,10 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 						case 'BUILDING':
 						case 'HOUSE':
 							newNodePropertiesInfo.push({ nodeId, label: 'Name', value: properties.name });
+							if (node_type === 'BUILDING') {
+								const buildingFloorsCount = await session.run('MATCH (:Building { id: $nodeId })-[]-(f:Floor) RETURN DISTINCT f', { nodeId });
+								newNodePropertiesInfo.push({ nodeId, label: 'Floors', value: buildingFloorsCount.records.length.toString() });
+							}
 							const buildingRoutersCount = await session.run('MATCH (:Building { id: $nodeId })-[*1..2]-(r:Router) RETURN DISTINCT r', { nodeId });
 							const buildingWifisCount = await session.run('MATCH (:Building { id: $nodeId })-[*1..3]-(w:Wifi) RETURN DISTINCT w', { nodeId });
 							const buildingClientsCount = await session.run('MATCH (:Building { id: $nodeId })-[*2..3]-(c:Client) RETURN DISTINCT c', { nodeId });
