@@ -82,6 +82,7 @@ export const DashboardView = () => {
 	const setSigmaSettings = useSetSettings();
 	const createGraph = async () => {
 		const graph = sigma.getGraph();
+		graph.clear();
 		neo4jSigmaGraph.setGraph(graph);
 		const addNodeAndRelationsPaths = async (node: Node) => {
 			neo4jSigmaGraph.addNodeToGraph(node);
@@ -370,12 +371,12 @@ export const DashboardView = () => {
 			try {
 				const graph = sigma.getGraph();
 				neo4jSigmaGraph.setGraph(graph);
-				neo4jSigmaGraph.getGraph().clear();
 				const paths = await neo4jSigmaGraph.getNodesShortestPath(startNode, endNode);
 				if (paths.length === 0) {
 					enqueueSnackbar(`There's no path between (${startNodeSearch}) and (${endNodeSearch})`, { variant: 'warning' });
 					return;
 				}
+				graph.clear();
 				paths.forEach(neo4jSigmaGraph.addRelationPathToGraph);
 				circlepack.assign(neo4jSigmaGraph.getGraph(), { hierarchyAttributes: ['node_type'] });
 				const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
