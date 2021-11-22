@@ -3,11 +3,11 @@ import {
 	Delete as DeleteIcon,
 	Upload as UploadIcon,
 	HomeWork as HomeWorkIcon,
-    Router as RouterIcon,
+	Router as RouterIcon,
 	Flag as FlagIcon,
 	PinDrop as PinDropIcon,
 	Wifi as WifiIcon,
-    SignalWifiBad as SignalWifiBadIcon,
+	SignalWifiBad as SignalWifiBadIcon,
 } from '@mui/icons-material';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTitle } from 'react-use';
@@ -16,7 +16,22 @@ import { Settings as SigmaSettings } from 'sigma/settings';
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import { MouseCoords, NodeDisplayData } from 'sigma/types';
 import { appContext } from '../App';
-import { AddNode, AttachWifiToBuilding, ContextMenu, FloatingActions, AttachWifiToRouter, Settings, ConfirmAction, AttachRouterToBuilding, AddClientTo, AddWifiProbe, RemoveWifiProbe, ConvertWifiProbeToStation, UploadWifiHandshake } from '../components';
+import {
+	AddNode,
+	AttachWifiToBuilding,
+	ContextMenu,
+	FloatingActions,
+	AttachWifiToRouter,
+	Settings,
+	ConfirmAction,
+	AttachRouterToBuilding,
+	AddClientTo,
+	AddWifiProbe,
+	RemoveWifiProbe,
+	ConvertWifiProbeToStation,
+	UploadWifiHandshake,
+	ClientConnectToRouter,
+} from '../components';
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
@@ -240,11 +255,15 @@ export const DashboardView = () => {
 			case 'CLIENT':
 				let clientHasWifiProbes = false;
 				let clientConnectedToRouter = false;
+				let clientRouterLabel = '';
 				edgesEndpoints.forEach(([extremities, label]) => {
 					if (_.includes(extremities, e.node)) {
 						const node_type: NodeType = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'node_type');
 						if (!clientHasWifiProbes) clientHasWifiProbes = (label === 'KNOWS' && node_type === 'WIFIPROBE') || (label === 'CONNECTS_TO' && node_type === 'WIFI');
-						if (!clientConnectedToRouter) clientConnectedToRouter = label === 'ATTACHED_TO' && node_type === 'ROUTER';
+						if (!clientConnectedToRouter) {
+							clientConnectedToRouter = label === 'CONNECTS_TO' && node_type === 'ROUTER';
+							clientRouterLabel = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'label');
+						}
 					}
 				});
 				if (!foundPath) {
@@ -255,6 +274,26 @@ export const DashboardView = () => {
 					if (clientHasWifiProbes) items.push([<SignalWifiBadIcon />, 'Remove wifi probe', id => {
 						setShowRemoveWifiProbe(true);
 						setRemoveWifiProbeClientId(id);
+					}]);
+					items.push([<RouterIcon />, `${!clientConnectedToRouter ? 'Connect to a' : 'Disconnect from'} router`, id => {
+						if (clientConnectedToRouter) {
+							setShowConfirmAction(true);
+							setConfirmActionName('Disconnect');
+							setConfirmActionTitle('Disconnect client from router');
+							setConfirmActionQuestion(`Are you sure you want to client (${sigma.getGraph().getNodeAttribute(id, 'label')}) from router (${clientRouterLabel})?`);
+							setConfirmAction(() => () => {
+								if (driver) {
+									const session = driver.session({ database });
+									session.run('MATCH (n {id: $id})-[r:CONNECTS_TO]-(:Router) DELETE r REMOVE n.ip', { id })
+										.then(() => { enqueueSnackbar('Client disconnected successfully', { variant: 'success' }); })
+										.catch(err => { enqueueSnackbar((err as Neo4jError).message, { variant: 'error' }); })
+										.finally(() => { session.close(); createGraphCallback(); });
+								}
+							});
+						} else {
+							setShowClientConnectToRouter(true);
+							setClientConnectToRouterClientId(id);
+						}
 					}]);
 				}
 				break;
@@ -432,6 +471,8 @@ export const DashboardView = () => {
 	const [convertWifiProbeProbeId, setConvertWifiProbeProbeId] = useState('');
 	const [showUploadWifiHandshake, setShowUploadWifiHandshake] = useState(false);
 	const [uploadWifiHandshakeWifiId, setUploadWifiHandshakeWifiId] = useState('');
+	const [showClientConnectToRouter, setShowClientConnectToRouter] = useState(false);
+	const [clientConnectToRouterClientId, setClientConnectToRouterClientId] = useState('');
 	return (
 		<>
 			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
@@ -447,6 +488,7 @@ export const DashboardView = () => {
 			<RemoveWifiProbe show={showRemoveWifiProbe} onDone={createGraphCallback} close={() => { setShowRemoveWifiProbe(false); setRemoveWifiProbeClientId(''); }} clientId={removeWifiProbeClientId} />
 			<ConvertWifiProbeToStation show={showConvertWifiProbe} onDone={createGraphCallback} close={() => { setShowConvertWifiProbe(false); setConvertWifiProbeProbeId(''); }} probeId={convertWifiProbeProbeId} />
 			<UploadWifiHandshake show={showUploadWifiHandshake} onDone={createGraphCallback} close={() => { setShowUploadWifiHandshake(false); setUploadWifiHandshakeWifiId(''); }} wifiId={uploadWifiHandshakeWifiId} />
+			<ClientConnectToRouter clientId={clientConnectToRouterClientId} show={showClientConnectToRouter} onDone={createGraphCallback} close={() => { setShowClientConnectToRouter(false); setClientConnectToRouterClientId(''); }} />
 		</>
 	)
 }

@@ -14,3 +14,4 @@ export * from './add-wifi-probe.component';
 export * from './remove-wifi-probe.component';
 export * from './convert-wifi-probe-to-station.component';
 export * from './upload-wifi-handshake.component';
+export * from './client-connect-to-router.component';
