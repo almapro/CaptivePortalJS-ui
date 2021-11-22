@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, IconButton, Grid, Tooltip } from '@mui/material';
+import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, IconButton, Grid, Tooltip, Paper, Collapse, List, ListItem, InputAdornment } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { FC, useContext, useState, useEffect } from 'react';
 import {
@@ -8,10 +8,16 @@ import {
 	Add as AddIcon,
 	Settings as SettingsIcon,
 	Timeline as TimelineIcon,
+	ExpandLess as ExpandLessIcon,
+	ExpandMore as ExpandMoreIcon,
+	Visibility as VisibilityIcon,
+	VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
 import Graph from 'graphology';
+import { NodeType } from '../neo4j-sigma-graph';
+import _ from 'lodash';
 
 export type FloatingActionsProps = {
 	showAddNode: () => void
@@ -19,7 +25,29 @@ export type FloatingActionsProps = {
 }
 
 export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings }) => {
-	const { theme, search, setSearch, foundNode, setFoundNode, isFindPath, setIsFindPath, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch } = useContext(appContext);
+	const {
+		theme,
+		search,
+		setSearch,
+		foundNode,
+		setFoundNode,
+		isFindPath,
+		setIsFindPath,
+		startNode,
+		setStartNode,
+		startNodeSearch,
+		setStartNodeSearch,
+		endNode,
+		setEndNode,
+		endNodeSearch,
+		setEndNodeSearch,
+		hoveredNode,
+		hoveredNodeLabel,
+		selectedNode,
+		selectedNodeLabel,
+		driver,
+		database,
+	} = useContext(appContext);
 	const sigma = useSigma();
 	const graph = sigma.getGraph();
 	const useStyles = makeStyles({
@@ -28,6 +56,12 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 			zIndex: theme.zIndex.appBar,
 			bottom: theme.spacing(2),
 			right: theme.spacing(2),
+		},
+		floatingActionsBottomLeft: {
+			position: 'absolute',
+			zIndex: theme.zIndex.appBar,
+			bottom: theme.spacing(2),
+			left: theme.spacing(2),
 		},
 		floatingSearchAndFind: {
 			position: 'absolute',
@@ -139,6 +173,84 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 	const handleZoomReset = () => {
 		sigma.getCamera().animatedReset();
 	}
+	const [expandNodeInfo, setExpandNodeInfo] = useState(true);
+	type NodePropertyInfoType = { nodeId: string,  label: string, value: string, secondaryAction?: JSX.Element, password?: boolean, toggleShowPassword?: () => void };
+	const [nodePropertiesInfo, setNodePropertiesInfo] = useState<NodePropertyInfoType[]>([]);
+	const [showPasswordFields, setShowPasswordFields] = useState<string[]>([]);
+	useEffect(() => {
+		const asyncCallback = async () => {
+			if (!hoveredNode && !selectedNode) {
+				setNodePropertiesInfo([]);
+				return;
+			}
+			const graph = sigma.getGraph();
+			const generateNodePropertiesInfoFromNode = async (node: string) => {
+				const newNodePropertiesInfo: NodePropertyInfoType[] = [];
+				if (driver) {
+					const session = driver.session({ database });
+					const properties = graph.getNodeAttributes(node);
+					const node_type: NodeType = properties.node_type;
+					const nodeId = properties.id;
+					switch(node_type) {
+						case 'WIFI':
+							newNodePropertiesInfo.push({ nodeId, label: 'ESSID', value: properties.essid });
+							newNodePropertiesInfo.push({ nodeId, label: 'BSSID', value: properties.bssid });
+							if (properties.password) newNodePropertiesInfo.push({ nodeId, label: 'Password', value: properties.password, password: true, toggleShowPassword: () => setShowPasswordFields(prev => {
+								if (_.includes(prev, properties.id)) return prev.filter(i => i !== properties.id);
+								return [ ...prev, properties.id ];
+							}), });
+							const wifiClientsCount = await session.run('MATCH (:Wifi { id: $nodeId })<-[]-(c:Client) RETURN DISTINCT c', { nodeId });
+							newNodePropertiesInfo.push({ nodeId, label: 'Clients', value: wifiClientsCount.records.length.toString() });
+							break;
+						case 'ROUTER':
+							newNodePropertiesInfo.push({ nodeId, label: 'IP', value: properties.ip });
+							newNodePropertiesInfo.push({ nodeId, label: 'MAC', value: properties.mac });
+							const routerWifisCount = await session.run('MATCH (:Router { id: $nodeId })-[]-(w:Wifi) RETURN DISTINCT w', { nodeId });
+							const routerClientsCount = await session.run('MATCH (:Router { id: $nodeId })-[*1..2]-(c:Client) RETURN DISTINCT c', { nodeId });
+							newNodePropertiesInfo.push({ nodeId, label: 'Wifis', value: routerWifisCount.records.length.toString() });
+							newNodePropertiesInfo.push({ nodeId, label: 'Clients', value: routerClientsCount.records.length.toString() });
+							break;
+						case 'CLIENT':
+							if (properties.ip) newNodePropertiesInfo.push({ nodeId, label: 'IP', value: properties.ip });
+							newNodePropertiesInfo.push({ nodeId, label: 'MAC', value: properties.mac });
+							break;
+						case 'WIFIPROBE':
+							newNodePropertiesInfo.push({ nodeId, label: 'ESSID', value: properties.essid });
+							const wifiProbeClientsCount = await session.run('MATCH (:WifiProbe { id: $nodeId })-[*1]-(c:Client) RETURN DISTINCT c', { nodeId });
+							newNodePropertiesInfo.push({ nodeId, label: 'Clients', value: wifiProbeClientsCount.records.length.toString() });
+							break;
+						case 'FLOOR':
+							const floorRoutersCount = await session.run('MATCH (:Floor { id: $nodeId })-[*1]-(r:Router) RETURN DISTINCT r', { nodeId });
+							const floorWifisCount = await session.run('MATCH (:Floor { id: $nodeId })-[*1..2]-(w:Wifi) RETURN DISTINCT w', { nodeId });
+							const floorClientsCount = await session.run('MATCH (:Floor { id: $nodeId })-[*2]-(c:Client) RETURN DISTINCT c', { nodeId });
+							newNodePropertiesInfo.push({ nodeId, label: 'Wifis', value: floorWifisCount.records.length.toString() });
+							newNodePropertiesInfo.push({ nodeId, label: 'Routers', value: floorRoutersCount.records.length.toString() });
+							newNodePropertiesInfo.push({ nodeId, label: 'Clients', value: floorClientsCount.records.length.toString() });
+							break;
+						case 'BUILDING':
+						case 'HOUSE':
+							newNodePropertiesInfo.push({ nodeId, label: 'Name', value: properties.name });
+							const buildingRoutersCount = await session.run('MATCH (:Building { id: $nodeId })-[*1..2]-(r:Router) RETURN DISTINCT r', { nodeId });
+							const buildingWifisCount = await session.run('MATCH (:Building { id: $nodeId })-[*1..3]-(w:Wifi) RETURN DISTINCT w', { nodeId });
+							const buildingClientsCount = await session.run('MATCH (:Building { id: $nodeId })-[*2..3]-(c:Client) RETURN DISTINCT c', { nodeId });
+							newNodePropertiesInfo.push({ nodeId, label: 'Wifis', value: buildingWifisCount.records.length.toString() });
+							newNodePropertiesInfo.push({ nodeId, label: 'Routers', value: buildingRoutersCount.records.length.toString() });
+							newNodePropertiesInfo.push({ nodeId, label: 'Clients', value: buildingClientsCount.records.length.toString() });
+							break;
+					}
+					await session.close();
+				}
+				return newNodePropertiesInfo;
+			}
+			if (hoveredNode && selectedNode !== hoveredNode) {
+				setNodePropertiesInfo(await generateNodePropertiesInfoFromNode(hoveredNode));
+			} else if (selectedNode) {
+				setNodePropertiesInfo(await generateNodePropertiesInfoFromNode(selectedNode));
+			}
+		}
+		asyncCallback();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selectedNode, hoveredNode]);
 	return (
 		<>
 			<Box className={classes.floatingActionsTop} display='grid' rowGap={2}>
@@ -190,6 +302,43 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 						</Tooltip>
 					</Grid>
 				</Grid>
+			</Box>
+			<Box className={classes.floatingActionsBottomLeft}>
+				<Collapse in={expandNodeInfo && nodePropertiesInfo.length > 0} collapsedSize={theme.spacing(8)}>
+					<Paper sx={{ width: 450, p: 2 }}>
+						<Grid container>
+							<Grid item xs={11}>Node info{(hoveredNodeLabel || selectedNodeLabel) && ` (${hoveredNodeLabel || selectedNodeLabel})`}</Grid>
+							<Grid item xs={1}>
+								<Tooltip title={`${expandNodeInfo ? 'Minimize' : 'Expand' } node info`}>
+									<IconButton size='small' onClick={() => setExpandNodeInfo(!expandNodeInfo)}>
+										{!expandNodeInfo ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+									</IconButton>
+								</Tooltip>
+							</Grid>
+							<Grid item xs={12}>
+								{expandNodeInfo && <>
+									<List>
+										{nodePropertiesInfo.map(propertyInfo => <ListItem key={propertyInfo.label} secondaryAction={propertyInfo.secondaryAction}>
+											<Grid container>
+												<Grid item xs={3} sx={{ py: 2 }}>{propertyInfo.label}</Grid>
+												<Grid item xs={8}>
+													<TextField InputProps={{
+														endAdornment: propertyInfo.password ?
+															<InputAdornment position='end'>
+																<IconButton onClick={() => { if (propertyInfo.toggleShowPassword) propertyInfo.toggleShowPassword(); }} edge='end'>
+																	{_.includes(showPasswordFields, propertyInfo.nodeId) ? <VisibilityOffIcon /> : <VisibilityIcon />}
+																</IconButton>
+															</InputAdornment> : ''
+													}} fullWidth value={propertyInfo.value} type={propertyInfo.password && !_.includes(showPasswordFields, propertyInfo.nodeId) ? 'password' : 'text'} />
+												</Grid>
+											</Grid>
+										</ListItem>)}
+									</List>
+								</>}
+							</Grid>
+						</Grid>
+					</Paper>
+				</Collapse>
 			</Box>
 		</>
 	);

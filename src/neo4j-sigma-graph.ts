@@ -35,7 +35,7 @@ export class Neo4jSigmaGraph {
 
   addNodeToGraph = (node: Node) => {
     const node_type = node.labels[0].toUpperCase() as NodeType;
-    const data: any = { node_type, type: 'image' };
+    const data: any = { node_type, type: 'image', id: node.properties.id };
     switch (node_type) {
       case 'WIFI':
         data.image = WifiSvgIcon;

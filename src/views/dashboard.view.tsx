@@ -35,7 +35,7 @@ import {
 import { Attributes } from 'graphology-types';
 import { useSigma, useSetSettings, useRegisterEvents } from 'react-sigma-v2';
 import circlepack from 'graphology-layout/circlepack';
-import forceAtlas2 from 'graphology-layout-forceatlas2';
+// import forceAtlas2 from 'graphology-layout-forceatlas2';
 import { useSnackbar } from "notistack"
 import _ from 'lodash';
 import { Neo4jError, Node } from 'neo4j-driver';
@@ -50,7 +50,29 @@ export type ClickNode = {
 
 export const DashboardView = () => {
 	useTitle('Dashboard - Captive Portal JS');
-	const { driver, setSigma, theme, database, createDatabaseIndexesAndConstraints, startNode, setStartNode, startNodeSearch, setStartNodeSearch, endNode, setEndNode, endNodeSearch, setEndNodeSearch, isFindPath, setIsFindPath } = useContext(appContext);
+	const {
+		driver,
+		setSigma,
+		theme,
+		database,
+		createDatabaseIndexesAndConstraints,
+		startNode,
+		setStartNode,
+		startNodeSearch,
+		setStartNodeSearch,
+		endNode,
+		setEndNode,
+		endNodeSearch,
+		setEndNodeSearch,
+		isFindPath,
+		setIsFindPath,
+		hoveredNode,
+		setHoveredNode,
+		setHoveredNodeLabel,
+		selectedNode,
+		setSelectedNode,
+		setSelectedNodeLabel,
+	} = useContext(appContext);
 	const { enqueueSnackbar } = useSnackbar();
 	const sigma = useSigma();
 	const [neo4jSigmaGraph, setNeo4jSigmaGraph] = useState(new Neo4jSigmaGraph(sigma.getGraph(), driver, { database }));
@@ -113,8 +135,8 @@ export const DashboardView = () => {
 		(await neo4jSigmaGraph.getNodesByLabel('HOUSE')).forEach(node => addNodeAndRelationsPaths(node));
 		(await neo4jSigmaGraph.getNodesByLabel('WIFIPROBE')).forEach(node => addNodeAndRelationsPaths(node));
 		circlepack.assign(neo4jSigmaGraph.getGraph(), { hierarchyAttributes: ['node_type'] });
-		const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
-		forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
+		// const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
+		// forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
 		new SpringSupervisor(neo4jSigmaGraph.getGraph(), { isNodeFixed: (n) => neo4jSigmaGraph.getGraph().getNodeAttribute(n, "highlighted") }).start();
 		sigma.refresh();
 	}
@@ -330,7 +352,6 @@ export const DashboardView = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [foundPath]);
-	const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 	const registerEvents = useRegisterEvents();
 	useEffect(() => {
 		const nodeReducer = (__: string, data: Attributes): Partial<NodeDisplayData> => ({
@@ -355,8 +376,22 @@ export const DashboardView = () => {
 		setSigmaSettings(settings);
 		createGraphCallback();
 		registerEvents({
-			enterNode: e => setHoveredNode(e.node),
-			leaveNode: () => setHoveredNode(null),
+			enterNode: e => {
+				setHoveredNode(e.node);
+				setHoveredNodeLabel(sigma.getGraph().getNodeAttribute(e.node, 'label'));
+			},
+			leaveNode: () => {
+				setHoveredNode(null);
+				setHoveredNodeLabel('');
+			},
+			clickNode: e => {
+				if (selectedNode && selectedNode !== e.node) {
+					sigma.getGraph().removeNodeAttribute(selectedNode, 'highlighted');
+				}
+				setSelectedNode(selectedNode === e.node ? null : e.node);
+				setSelectedNodeLabel(selectedNode === e.node ? '' : sigma.getGraph().getNodeAttribute(e.node, 'label'));
+				sigma.getGraph().setNodeAttribute(e.node, 'highlighted', selectedNode !== e.node);
+			},
 		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -404,6 +439,25 @@ export const DashboardView = () => {
 				return newData;
 			},
 		});
+		registerEvents({
+			enterNode: e => {
+				setHoveredNode(e.node);
+				setHoveredNodeLabel(sigma.getGraph().getNodeAttribute(e.node, 'label'));
+			},
+			leaveNode: () => {
+				setHoveredNode(null);
+				setHoveredNodeLabel('');
+			},
+			clickNode: e => {
+				if (selectedNode && selectedNode !== e.node) {
+					sigma.getGraph().removeNodeAttribute(selectedNode, 'highlighted');
+				}
+				setSelectedNode(selectedNode === e.node ? null : e.node);
+				setSelectedNodeLabel(selectedNode === e.node ? '' : sigma.getGraph().getNodeAttribute(e.node, 'label'));
+				sigma.getGraph().setNodeAttribute(e.node, 'highlighted', selectedNode !== e.node);
+			},
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [hoveredNode, setSigmaSettings, sigma, theme, mouseMove]);
 	useEffect(() => {
 		if (driver) {
@@ -429,8 +483,8 @@ export const DashboardView = () => {
 				graph.clear();
 				paths.forEach(neo4jSigmaGraph.addRelationPathToGraph);
 				circlepack.assign(neo4jSigmaGraph.getGraph(), { hierarchyAttributes: ['node_type'] });
-				const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
-				forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
+				// const sensibleSettings = forceAtlas2.inferSettings(neo4jSigmaGraph.getGraph());
+				// forceAtlas2(neo4jSigmaGraph.getGraph(), { iterations: 50, settings: sensibleSettings });
 				new SpringSupervisor(neo4jSigmaGraph.getGraph(), { isNodeFixed: (n) => neo4jSigmaGraph.getGraph().getNodeAttribute(n, "highlighted") }).start();
 				sigma.refresh();
 				setFoundPath(true);

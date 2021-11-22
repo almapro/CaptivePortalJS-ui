@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { makeStyles } from '@mui/styles';
 import { DashboardView, LoginView } from './views';
 import { createContext, useEffect, useState } from 'react';
 import { Driver, Session } from 'neo4j-driver';
@@ -47,6 +48,14 @@ export type AppContext = {
 	setEndNodeSearch: (search: string) => void
 	endNode: string | null
 	setEndNode: (endNode: string | null) => void
+	hoveredNode: string | null
+	setHoveredNode: (hoveredNode: string | null) => void
+	hoveredNodeLabel: string
+	setHoveredNodeLabel: (hoveredNodeLabel: string) => void
+	selectedNode: string | null
+	setSelectedNode: (selectedNode: string | null) => void
+	selectedNodeLabel: string
+	setSelectedNodeLabel: (selectedNodeLabel: string) => void
 }
 
 export const appContext = createContext<AppContext>({
@@ -95,6 +104,14 @@ export const appContext = createContext<AppContext>({
 	setEndNodeSearch: () => {},
 	endNode: '',
 	setEndNode: () => {},
+	hoveredNode: null,
+	setHoveredNode: () => {},
+	hoveredNodeLabel: '',
+	setHoveredNodeLabel: () => {},
+	selectedNode: null,
+	setSelectedNode: () => {},
+	selectedNodeLabel: '',
+	setSelectedNodeLabel: () => {},
 });
 
 const App = () => {
@@ -127,6 +144,10 @@ const App = () => {
 	const [startNode, setStartNode] = useState<string | null>(null);
 	const [endNodeSearch, setEndNodeSearch] = useState('');
 	const [endNode, setEndNode] = useState<string | null>(null);
+	const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+	const [hoveredNodeLabel, setHoveredNodeLabel] = useState('');
+	const [selectedNode, setSelectedNode] = useState<string | null>(null);
+	const [selectedNodeLabel, setSelectedNodeLabel] = useState('');
 	useEffect(() => {
 		localStorage.setItem('darkMode', darkMode ? '1' : '');
 		setTheme(createTheme({
@@ -253,12 +274,26 @@ const App = () => {
 		setEndNodeSearch,
 		endNode,
 		setEndNode,
+		hoveredNode,
+		setHoveredNode,
+		hoveredNodeLabel,
+		setHoveredNodeLabel,
+		selectedNode,
+		setSelectedNode,
+		selectedNodeLabel,
+		setSelectedNodeLabel,
 	}
+	const useStyles = makeStyles({
+		snackbarProvider: {
+			marginRight: theme.spacing(10)
+		}
+	});
+	const classes = useStyles();
 	return (
 		<appContext.Provider value={appContextValue}>
 			<ThemeProvider theme={theme}>
 				<CssBaseline>
-					<SnackbarProvider maxSnack={3}>
+					<SnackbarProvider maxSnack={3} classes={{ anchorOriginTopRight: classes.snackbarProvider }} anchorOrigin={{ horizontal: 'right', vertical: 'top' }}>
 						<HashRouter basename='/'>
 							<Routes>
 								<Route path='/' element={

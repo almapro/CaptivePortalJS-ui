@@ -14,9 +14,13 @@ exports[`App renders correctly 1`] = `
       "endNode": null,
       "endNodeSearch": "",
       "foundNode": null,
+      "hoveredNode": null,
+      "hoveredNodeLabel": "",
       "isFindPath": false,
       "password": "",
       "search": "",
+      "selectedNode": null,
+      "selectedNodeLabel": "",
       "setAutologin": [Function],
       "setConnected": [Function],
       "setDatabase": [Function],
@@ -24,9 +28,13 @@ exports[`App renders correctly 1`] = `
       "setEndNode": [Function],
       "setEndNodeSearch": [Function],
       "setFoundNode": [Function],
+      "setHoveredNode": [Function],
+      "setHoveredNodeLabel": [Function],
       "setIsFindPath": [Function],
       "setPassword": [Function],
       "setSearch": [Function],
+      "setSelectedNode": [Function],
+      "setSelectedNodeLabel": [Function],
       "setSigma": [Function],
       "setStartNode": [Function],
       "setStartNodeSearch": [Function],
@@ -615,6 +623,17 @@ exports[`App renders correctly 1`] = `
   >
     <CssBaseline>
       <SnackbarProvider
+        anchorOrigin={
+          Object {
+            "horizontal": "right",
+            "vertical": "top",
+          }
+        }
+        classes={
+          Object {
+            "anchorOriginTopRight": "makeStyles-snackbarProvider-1",
+          }
+        }
         maxSnack={3}
       >
         <HashRouter
