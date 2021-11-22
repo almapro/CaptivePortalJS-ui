@@ -238,14 +238,25 @@ export const DashboardView = () => {
 				}]);
 				break;
 			case 'CLIENT':
-				if (!foundPath) items.push([<WifiIcon />, 'Add a wifi probe', id => {
-					setShowAddWifiProbe(true);
-					setAddWifiProbeClientId(id);
-				}]);
-				if (!foundPath) items.push([<SignalWifiBadIcon />, 'Remove wifi probe', id => {
-					setShowRemoveWifiProbe(true);
-					setRemoveWifiProbeClientId(id);
-				}]);
+				let clientHasWifiProbes = false;
+				let clientConnectedToRouter = false;
+				edgesEndpoints.forEach(([extremities, label]) => {
+					if (_.includes(extremities, e.node)) {
+						const node_type: NodeType = graph.getNodeAttribute(_.filter(extremities, n => n !== e.node)[0], 'node_type');
+						if (!clientHasWifiProbes) clientHasWifiProbes = (label === 'KNOWS' && node_type === 'WIFIPROBE') || (label === 'CONNECTS_TO' && node_type === 'WIFI');
+						if (!clientConnectedToRouter) clientConnectedToRouter = label === 'ATTACHED_TO' && node_type === 'ROUTER';
+					}
+				});
+				if (!foundPath) {
+					items.push([<WifiIcon />, 'Add a wifi probe', id => {
+						setShowAddWifiProbe(true);
+						setAddWifiProbeClientId(id);
+					}]);
+					if (clientHasWifiProbes) items.push([<SignalWifiBadIcon />, 'Remove wifi probe', id => {
+						setShowRemoveWifiProbe(true);
+						setRemoveWifiProbeClientId(id);
+					}]);
+				}
 				break;
 		}
 		if (nodeType !== 'FLOOR')
