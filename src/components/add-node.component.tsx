@@ -38,17 +38,6 @@ export const AddNode: FC<AddNodeProps> = ({ show, close, onDone: onDoneParent })
 		},
 	});
 	const classes = useStyles();
-	// const [filesOperations, setFilesOperations] = useState<{ operationId: string, filename: string, operationType: FileOperationType, filepath: string }[]>([]);
-	// const addFileOperation = (filename: string, operationType: FileOperationType, ...args: any[]) => {
-	// 	const operationId = v4();
-	// 	setFilesOperations([...filesOperations, { filename, operationType, filepath: '', operationId }]);
-	// }
-	// const removeFileOperation = (operationId: string) => {
-	// 	setFilesOperations(filesOperations.filter(operation => operation.operationId !== operationId));
-	// }
-	// const updateFileOperationFilepath = (operationId: string, filepath: string) => {
-	// 	setFilesOperations(filesOperations.map(operation => operation.operationId !== operationId ? operation : { ...operation, filepath }));
-	// }
 	const [nodeType, setNodeType] = useState<null | NodeType>(null);
 	const nodeTypes: [JSX.Element, string, NodeType, string][] = [
 		[<HomeWorkIcon />, 'Building', 'BUILDING', 'A building might be an apartment with floors or a house'],
