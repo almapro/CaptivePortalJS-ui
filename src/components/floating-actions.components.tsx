@@ -45,6 +45,7 @@ import _ from 'lodash';
 import { useSnackbar } from 'notistack';
 import { Neo4jError, int } from 'neo4j-driver';
 import { v4 } from 'uuid';
+import { parse } from 'csv-parse/lib/index';
 
 export type FloatingActionsProps = {
 	showAddNode: () => void
@@ -310,6 +311,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 	const [showImportDialog, setShowImportDialog] = useState(false);
 	const [importFromExportedGraphFile, setImportFromExportedGraphFile] = useState<File | null>(null);
 	const [importFromWifiteCrackedFile, setImportFromWifiteCrackedFile] = useState<File | null>(null);
+	const [importFromAirodumpCsvFile, setImportFromAirodumpCsvFile] = useState<File | null>(null);
 	const [showExportDialog, setShowExportDialog] = useState(false);
 	const [tabIndex, setTabIndex] = useState(0);
 	const handleCancel = () => {
@@ -317,6 +319,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		setShowExportDialog(false);
 		setImportFromExportedGraphFile(null);
 		setImportFromWifiteCrackedFile(null);
+		setImportFromAirodumpCsvFile(null);
 		setTabIndex(0);
 	}
 	type NodeTypeString = 'Wifi' | 'WifiProbe' | 'Handshake' | 'Client' | 'Router' | 'Building' | 'Floor';
@@ -404,7 +407,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 						}
 					}
 				}
-				reader.readAsBinaryString(importFromExportedGraphFile);
+				reader.readAsText(importFromExportedGraphFile, 'utf8');
 			}
 			if (tabIndex === 1 && importFromWifiteCrackedFile) {
 				reader.onload = async () => {
@@ -428,9 +431,7 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 									let queryString = `MERGE (n:Wifi { essid: $essid, bssid: $bssid })` +
 										` ON CREATE SET n.id = $id${nodeData.password ? ', n.password = $password' : ''}${nodeData.pin ? ', n.pin = $pin' : ''}`;
 									if (nodeData.password || nodeData.pin) queryString += ` ON MATCH SET ${_.join(_.compact([nodeData.password ? 'n.password = $password' : '', nodeData.pin ? 'n.pin = $pin' : '']), ', ')}`;
-									console.log({ queryString });
 									await trx.run(queryString, nodeData);
-									// await trx.run(generateNodeQueryStringFromParams(nodeType, nodeData), nodeData);
 								} catch (__) {}
 							});
 							await trx.commit();
@@ -443,7 +444,101 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 						}
 					}
 				}
-				reader.readAsBinaryString(importFromWifiteCrackedFile);
+				reader.readAsText(importFromWifiteCrackedFile, 'utf8');
+			}
+			if (tabIndex === 2 && importFromAirodumpCsvFile) {
+				reader.onload = async () => {
+					if (reader.result && typeof reader.result === 'string') {
+						try {
+							const parsedData: string[][] = [];
+							const parser = parse({
+								relax_column_count_less: true,
+								relax_column_count_more: true,
+								encoding: 'utf8',
+								delimiter: ', ',
+							});
+							parser.on('data', data => parsedData.push(data));
+							reader.result.split('\n').forEach(row => { if (!!row.trim()) parser.write(row); });
+							parser.end();
+							if (!parsedData.length) throw new Neo4jError('Selected airodump csv file has no nodes!', '1');
+							let stationRows = true;
+							const wifis: { essid: string, bssid: string }[] = [];
+							const clients: { mac: string }[] = [];
+							const probes: { essid: string }[] = [];
+							const edges: { label: string, wifi: string, client: string }[] = [];
+							parsedData.forEach(row => {
+								if (row[0] === 'BSSID') return;
+								if (row[0] === 'Station MAC') {
+									stationRows = false;
+									return;
+								}
+								if (stationRows) {
+									wifis.push({ essid: row[13], bssid: row[0] });
+								} else {
+									clients.push({ mac: row[0] });
+									const station = row[5].split(',')[0].trim();
+									const clientProbes = _.compact(row[5].split(','));
+									clientProbes.shift();
+									if (!station.includes(')')) {
+										edges.push({ label: 'CONNECTS_TO', wifi: station, client: row[0] });
+									}
+									if (clientProbes.length) {
+										clientProbes.forEach(p => {
+											const wifiFound = _.find(wifis, { essid: p });
+											if (wifiFound) {
+												const clientConnectsTo = { label: 'CONNECTS_TO', wifi: wifiFound.bssid, client: row[0] };
+												if (!_.find(edges, clientConnectsTo)) edges.push(clientConnectsTo);
+												return;
+											}
+											probes.push({ essid: p });
+											edges.push({ label: 'KNOWS', wifi: p, client: row[0] });
+										});
+									}
+								}
+							});
+							wifis.forEach(async node => {
+								const nodeData: any = { id: v4() };
+								nodeData.essid = node.essid;
+								nodeData.bssid = node.bssid;
+								try {
+									let queryString = `MERGE (n:Wifi { essid: $essid, bssid: $bssid }) ON CREATE SET n.id = $id`;
+									await trx.run(queryString, nodeData);
+								} catch (__) {}
+							});
+							probes.forEach(async node => {
+								const nodeData: any = { id: v4() };
+								nodeData.essid = node.essid;
+								try {
+									let queryString = `MERGE (n:WifiProbe { essid: $essid }) ON CREATE SET n.id = $id`;
+									await trx.run(queryString, nodeData);
+								} catch (__) {}
+							});
+							clients.forEach(async node => {
+								const nodeData: any = { id: v4() };
+								nodeData.mac = node.mac;
+								try {
+									let queryString = `MERGE (n:Client { mac: $mac }) ON CREATE SET n.id = $id`;
+									await trx.run(queryString, nodeData);
+								} catch (__) {}
+							});
+							edges.forEach(async edge => {
+								const edgeData: any = {};
+								edgeData.wifi = edge.wifi;
+								edgeData.client = edge.client;
+								let queryString = `MATCH (c { mac: $client }), (w { ${edge.label === 'KNOWS' ? 'essid: $wifi' : 'bssid: $wifi'} }) MERGE (c)-[:${edge.label}]->(w)`;
+								await trx.run(queryString, edgeData);
+							});
+							await trx.commit();
+							await session.close();
+							enqueueSnackbar('Airodump csv has been imported successfuly', { variant: 'success' });
+							handleCancel();
+							onDoneImporting();
+						} catch (e) {
+							enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+						}
+					}
+				}
+				reader.readAsText(importFromAirodumpCsvFile, 'utf8');
 			}
 		}
 	}
@@ -577,7 +672,14 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 								{importFromWifiteCrackedFile && <TextField fullWidth size='small' InputProps={{ readOnly: true }} value={importFromWifiteCrackedFile.path} />}
 							</Grid>
 						</Grid>}
-						{tabIndex === 2 && 'Coming soon...'}
+						{tabIndex === 2 && <Grid container spacing={2}>
+							<Grid item>
+								<Button variant='contained' component='label'>Choose a file<input accept='.csv' onChange={e => setImportFromAirodumpCsvFile(e.target.files?.item(0) ?? null)} type='file' hidden /></Button>
+							</Grid>
+							<Grid item sx={{ flexGrow: 1 }}>
+								{importFromAirodumpCsvFile && <TextField fullWidth size='small' InputProps={{ readOnly: true }} value={importFromAirodumpCsvFile.path} />}
+							</Grid>
+						</Grid>}
 					</DialogContent>
 					<DialogActions>
 						<Button color='inherit' onClick={handleCancel}>Cancel</Button>
