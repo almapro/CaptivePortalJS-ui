@@ -15,6 +15,7 @@ declare global {
 			list: (nodeId: string, filesType: FileType) => string[]
 			delete: (nodeId: string, fileType: FileType, filename: string) => void
 			clearUnused: (filesType: FileType, files: any[]) => Pomise<number>
+			saveFile: (content) => Pomise<void>
 		}
 	}
 }

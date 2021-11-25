@@ -46,6 +46,19 @@ contextBridge.exposeInMainWorld(
         }
       });
       return deleted;
+    },
+    saveFile: async (content) => {
+      const filePath = electron.remote.dialog.showSaveDialogSync({
+        title: 'Choosea file to export to',
+        defaultPath: 'captive-portal-js-graph.json',
+        filters: [
+          {
+            name: 'JSON',
+            extensions: ['json']
+          }
+        ]
+      });
+      fs.writeFileSync(filePath, content);
     }
   }
 )
