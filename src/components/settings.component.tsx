@@ -11,19 +11,28 @@ import {
 	Checkbox,
 	FormGroup,
 	Box,
+    Paper,
+    TextField,
+	Tooltip,
+	InputAdornment,
+	IconButton,
 } from "@mui/material"
-import { FC, useContext, useState, useCallback } from "react"
+import { FC, useContext, useState, useCallback, FormEvent } from "react"
 import { appContext } from "../App"
 import {
 	Logout as LogoutIcon,
+	ArrowCircleRight as ArrowCircleRightIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { FileType } from "../global.d";
 import { useSnackbar } from "notistack";
+import { red } from "@mui/material/colors";
+import { Neo4jError } from "neo4j-driver";
 
 export type SettingsProps = {
 	show: boolean
 	close: () => void
+	onDone: () => void
 }
 
 export const ThemeModeSwitch = styled(Switch)(({ theme }) => ({
@@ -73,9 +82,9 @@ export const ThemeModeSwitch = styled(Switch)(({ theme }) => ({
 	},
 }));
 
-export const Settings: FC<SettingsProps> = ({ show, close }) => {
+export const Settings: FC<SettingsProps> = ({ show, close, onDone }) => {
 	const { enqueueSnackbar } = useSnackbar();
-	const { darkMode, toggleDarkMode, setDriver, setDatabase, setConnected, driver, theme, database } = useContext(appContext);
+	const { darkMode, toggleDarkMode, setDriver, setDatabase, setConnected, driver, theme, database, dropDatabaseIndexesAndConstraints, createDatabaseIndexesAndConstraints } = useContext(appContext);
 	const disconnect = async () => {
 		await driver?.close();
 		setDriver(null);
@@ -111,6 +120,27 @@ export const Settings: FC<SettingsProps> = ({ show, close }) => {
 		}
 	}
 	const deleteUsedFilesCallback = useCallback(deleteUsedFiles, [driver, filesTypes, setFilesTypes, database, enqueueSnackbar]);
+	const [waitingResetDatabaseConfirmation, setWaitingResetDatabaseConfirmation] = useState(false);
+	const [confirmDatabaseReset, setConfirmDatabaseReset] = useState('');
+	const handleDatabaseReset = async (e: FormEvent) => {
+		e.preventDefault();
+		if (confirmDatabaseReset !== 'CONFIRM') return;
+		if (driver) {
+			try {
+				const session = driver.session({ database });
+				await session.run('MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE r, n');
+				await session.close();
+				dropDatabaseIndexesAndConstraints(driver.session({ database }));
+				createDatabaseIndexesAndConstraints(driver.session({ database }));
+				enqueueSnackbar('Database has been reset', { variant: 'info' });
+				setConfirmDatabaseReset('');
+				setWaitingResetDatabaseConfirmation(false);
+				onDone();
+			} catch (e) {
+				enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+			}
+		}
+	}
 	if (!show) return null;
 	return (
 		<Dialog open={show} fullWidth maxWidth='sm'>
@@ -132,6 +162,40 @@ export const Settings: FC<SettingsProps> = ({ show, close }) => {
 						<Button onClick={deleteUsedFilesCallback} size='small' variant='contained' disabled={!filesTypes['handshakes'] && !filesTypes['pictures']}>Clear</Button>
 					</Box>
 				</Box>
+				<Paper sx={{ border: 2, borderColor: red[500], p: 2, mt: 2 }}>
+					<Box sx={{ color: red[500] }}>DANGER ZONE</Box>
+					<Box sx={{ mt: 2 }}>
+						<form onSubmit={handleDatabaseReset}>
+							<Grid container spacing={2}>
+								<Grid item xs={4}>
+									<Button disabled={waitingResetDatabaseConfirmation} size='medium' color='error' variant='contained' onClick={() => setWaitingResetDatabaseConfirmation(true)}>reset database</Button>
+								</Grid>
+								<Grid item xs={6}>
+									{waitingResetDatabaseConfirmation && <Tooltip title='Write CONFIRM (all caps) to continue'>
+										<TextField
+											InputProps={{
+												endAdornment: <InputAdornment position='end'>
+													<IconButton color='error' disabled={confirmDatabaseReset !== 'CONFIRM'} type='submit'><ArrowCircleRightIcon /></IconButton>
+												</InputAdornment>,
+												sx: {
+													pr: 0
+												}
+											}}
+											fullWidth
+											color='error'
+											label='Confirmation'
+											size='small'
+											value={confirmDatabaseReset}
+											onChange={e => setConfirmDatabaseReset(e.target.value)} />
+									</Tooltip>}
+								</Grid>
+								<Grid item xs={2}>
+									{waitingResetDatabaseConfirmation && <Button size='medium' onClick={() => { setConfirmDatabaseReset(''); setWaitingResetDatabaseConfirmation(false); }}>cancel</Button>}
+								</Grid>
+							</Grid>
+						</form>
+					</Box>
+				</Paper>
 			</DialogContent>
 			<Divider variant='middle' />
 			<DialogActions style={{ padding: theme.spacing(3) }}>

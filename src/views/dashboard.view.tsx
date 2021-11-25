@@ -140,7 +140,7 @@ export const DashboardView = () => {
 		new SpringSupervisor(neo4jSigmaGraph.getGraph(), { isNodeFixed: (n) => neo4jSigmaGraph.getGraph().getNodeAttribute(n, "highlighted") }).start();
 		sigma.refresh();
 	}
-	const createGraphCallback = useCallback(createGraph, [neo4jSigmaGraph]);
+	const createGraphCallback = useCallback(createGraph, [neo4jSigmaGraph, sigma]);
 	const [menu, setMenu] = useState<{
 		show: boolean,
 		node: string,
@@ -529,8 +529,8 @@ export const DashboardView = () => {
 	const [clientConnectToRouterClientId, setClientConnectToRouterClientId] = useState('');
 	return (
 		<>
-			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} />
-			<Settings show={showSettings} close={() => setShowSettings(false)}/>
+			<FloatingActions showAddNode={() => setShowAddNode(true)} showSettings={() => setShowSettings(true)} onDoneImporting={createGraphCallback} />
+			<Settings onDone={createGraphCallback} show={showSettings} close={() => setShowSettings(false)}/>
 			<AddNode onDone={createGraphCallback} show={showAddNode} close={() => setShowAddNode(false)}/>
 			<AttachWifiToBuilding wifiId={toBeAttachedWifiId} onDone={createGraphCallback} show={showAttachWifiToBuilding} close={() => { setShowAttachWifiToBuilding(false); setToBeAttachedWifiId(''); }}/>
 			<AttachRouterToBuilding routerId={toBeAttachedRouterId} onDone={createGraphCallback} show={showAttachRouterToBuilding} close={() => { setShowAttachRouterToBuilding(false); setToBeAttachedRouterId(''); }}/>

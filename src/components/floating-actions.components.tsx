@@ -1,6 +1,27 @@
-import { Box, Button, ButtonGroup, Fab, Autocomplete, TextField, IconButton, Grid, Tooltip, Paper, Collapse, List, ListItem, InputAdornment } from '@mui/material';
+import {
+	Box,
+	Button,
+	ButtonGroup,
+	Fab,
+	Autocomplete,
+	TextField,
+	IconButton,
+	Grid,
+	Tooltip,
+	Paper,
+	Collapse,
+	List,
+	ListItem,
+	InputAdornment,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
+	Tabs,
+	Tab,
+} from '@mui/material';
 import { makeStyles } from '@mui/styles';
-import { FC, useContext, useState, useEffect } from 'react';
+import { FC, useContext, useState, useEffect, FormEvent } from 'react';
 import {
 	ZoomIn as ZoomInIcon,
 	ZoomOut as ZoomOutIcon,
@@ -13,19 +34,44 @@ import {
 	Visibility as VisibilityIcon,
 	VisibilityOff as VisibilityOffIcon,
 	Refresh as RefreshIcon,
+	UploadFile as UploadFileIcon,
+	Download as DownloadIcon,
 } from '@mui/icons-material';
 import { appContext } from '../App';
 import { useSigma } from 'react-sigma-v2';
 import Graph from 'graphology';
-import { NodeType } from '../neo4j-sigma-graph';
+import { NodeType, RelationType } from '../neo4j-sigma-graph';
 import _ from 'lodash';
+import { useSnackbar } from 'notistack';
+import { Neo4jError, int } from 'neo4j-driver';
+import { v4 } from 'uuid';
 
 export type FloatingActionsProps = {
 	showAddNode: () => void
 	showSettings: () => void
+	onDoneImporting: () => void
 }
 
-export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings }) => {
+export type WifiteCrackedWPA = {
+	type: "WPA"
+	date: number
+	essid: string
+	bssid: string
+	key: string
+	handshake_file: string
+}
+
+export type WifiteCrackedWPS = {
+	type: "WPS"
+	date: number
+	essid: string
+	bssid: string
+	pin: string
+	psk: string
+}
+
+export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSettings, onDoneImporting }) => {
+	const { enqueueSnackbar } = useSnackbar();
 	const {
 		theme,
 		search,
@@ -175,9 +221,10 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		sigma.getCamera().animatedReset();
 	}
 	const [expandNodeInfo, setExpandNodeInfo] = useState(true);
-	type NodePropertyInfoType = { nodeId: string,  label: string, value: string, secondaryAction?: JSX.Element, password?: boolean, toggleShowPassword?: () => void };
+	type NodePropertyInfoType = { nodeId: string,  label: string, value: string, secondaryAction?: JSX.Element, pin?: boolean, password?: boolean, toggleShowPassword?: () => void };
 	const [nodePropertiesInfo, setNodePropertiesInfo] = useState<NodePropertyInfoType[]>([]);
 	const [showPasswordFields, setShowPasswordFields] = useState<string[]>([]);
+	const [showPinFields, setShowPinFields] = useState<string[]>([]);
 	useEffect(() => {
 		const asyncCallback = async () => {
 			if (!hoveredNode && !selectedNode) {
@@ -197,6 +244,10 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 							newNodePropertiesInfo.push({ nodeId, label: 'ESSID', value: properties.essid });
 							newNodePropertiesInfo.push({ nodeId, label: 'BSSID', value: properties.bssid });
 							if (properties.password) newNodePropertiesInfo.push({ nodeId, label: 'Password', value: properties.password, password: true, toggleShowPassword: () => setShowPasswordFields(prev => {
+								if (_.includes(prev, properties.id)) return prev.filter(i => i !== properties.id);
+								return [ ...prev, properties.id ];
+							}), });
+							if (properties.pin) newNodePropertiesInfo.push({ nodeId, label: 'Pin', value: properties.pin, pin: true, toggleShowPassword: () => setShowPinFields(prev => {
 								if (_.includes(prev, properties.id)) return prev.filter(i => i !== properties.id);
 								return [ ...prev, properties.id ];
 							}), });
@@ -256,12 +307,165 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 		asyncCallback();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedNode, hoveredNode]);
+	const [showImportDialog, setShowImportDialog] = useState(false);
+	const [importFromExportedGraphFile, setImportFromExportedGraphFile] = useState<File | null>(null);
+	const [importFromWifiteCrackedFile, setImportFromWifiteCrackedFile] = useState<File | null>(null);
+	const [showExportDialog, setShowExportDialog] = useState(false);
+	const [tabIndex, setTabIndex] = useState(0);
+	const handleCancel = () => {
+		setShowImportDialog(false);
+		setShowExportDialog(false);
+		setImportFromExportedGraphFile(null);
+		setImportFromWifiteCrackedFile(null);
+		setTabIndex(0);
+	}
+	type NodeTypeString = 'Wifi' | 'WifiProbe' | 'Handshake' | 'Client' | 'Router' | 'Building' | 'Floor';
+	const generateNodeQueryStringFromParams = (type: NodeTypeString, params: any) => {
+		let paramsString = _.join(_.keys(params).map(key => `${key}: $${key}`), ', ');
+		return `MERGE (:${type} { ${paramsString} })`;
+	}
+	const generateEdgeQueryStringFromRelationType = (relationType: RelationType) => {
+		return `MATCH (s { id: $source }), (t { id: $target }) MERGE (s)-[:${relationType}]->(t)`;
+	}
+	const handleImportSubmit = async (e: FormEvent) => {
+		e.preventDefault();
+		if (driver) {
+			const graph = sigma.getGraph();
+			const session = driver.session({ database });
+			const trx = session.beginTransaction();
+			const reader = new FileReader();
+			if (tabIndex === 0 && importFromExportedGraphFile) {
+				reader.onload = async () => {
+					if (reader.result && typeof reader.result === 'string') {
+						try {
+							const parsedGraph = JSON.parse(reader.result);
+							if (!parsedGraph.nodes && !parsedGraph.edges) throw new Neo4jError('Selected graph has no nodes nor edges!', '1');
+							const importedGraph: { nodes: any[], edges: any[] } = parsedGraph;
+							importedGraph.nodes.forEach(async node => {
+								if (graph.hasNode(node.id)) return;
+								const node_type: NodeType = node.node_type;
+								let nodeType: NodeTypeString = 'Wifi';
+								const nodeData: any = { id: node.id };
+								switch(node_type) {
+									case 'WIFI':
+										nodeData.essid = node.essid;
+										nodeData.bssid = node.bssid;
+										if (node.password) {
+											nodeData.password = node.password;
+										}
+										break;
+									case 'WIFIPROBE':
+										nodeData.essid = node.essid;
+										nodeType = 'WifiProbe';
+										break;
+									case 'HOTSPOT':
+										nodeData.essid = node.essid;
+										nodeData.bssid = node.bssid;
+										nodeType = 'WifiProbe';
+										break;
+									case 'BUILDING':
+									case 'HOUSE':
+										nodeData.name = node.name;
+										nodeData.type = _.capitalize(node.node_type.toLowerCase());
+										nodeType = 'Building';
+										break;
+									case 'FLOOR':
+										nodeData.number = int(node.number);
+										nodeType = 'Floor';
+										break;
+									case 'ROUTER':
+										nodeData.ip = node.ip;
+										nodeData.mac = node.mac;
+										nodeType = 'Router';
+										break;
+									case 'CLIENT':
+										if (node.ip) nodeData.ip = node.ip;
+										nodeData.mac = node.mac;
+										nodeType = 'Client';
+										break;
+								}
+								try {
+									await trx.run(generateNodeQueryStringFromParams(nodeType, nodeData), nodeData);
+								} catch (__) {}
+							});
+							importedGraph.edges.forEach(async edge => {
+								const edge_type: RelationType = edge.label;
+								try {
+									await trx.run(generateEdgeQueryStringFromRelationType(edge_type), { source: edge.source, target: edge.target });
+								} catch (__) {}
+							});
+							await trx.commit();
+							await session.close();
+							enqueueSnackbar('Graph has been imported successfuly', { variant: 'success' });
+							handleCancel();
+							onDoneImporting();
+						} catch (e) {
+							enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+						}
+					}
+				}
+				reader.readAsBinaryString(importFromExportedGraphFile);
+			}
+			if (tabIndex === 1 && importFromWifiteCrackedFile) {
+				reader.onload = async () => {
+					if (reader.result && typeof reader.result === 'string') {
+						try {
+							const parsedGraph = JSON.parse(reader.result);
+							if (!parsedGraph.length) throw new Neo4jError('Selected wifite cracked.json file has no nodes!', '1');
+							type WifiteNode = WifiteCrackedWPA | WifiteCrackedWPS;
+							const importedGraph: WifiteNode[] = parsedGraph;
+							importedGraph.forEach(async node => {
+								const nodeData: any = { id: v4() };
+								nodeData.essid = node.essid;
+								nodeData.bssid = node.bssid;
+								if (node.type === 'WPA') {
+									if (node.key) nodeData.password = node.key;
+								} else {
+									if (node.pin) nodeData.pin = node.pin;
+									if (node.psk) nodeData.password = node.psk;
+								}
+								try {
+									let queryString = `MERGE (n:Wifi { essid: $essid, bssid: $bssid })` +
+										` ON CREATE SET n.id = $id${nodeData.password ? ', n.password = $password' : ''}${nodeData.pin ? ', n.pin = $pin' : ''}`;
+									if (nodeData.password || nodeData.pin) queryString += ` ON MATCH SET ${_.join(_.compact([nodeData.password ? 'n.password = $password' : '', nodeData.pin ? 'n.pin = $pin' : '']), ', ')}`;
+									console.log({ queryString });
+									await trx.run(queryString, nodeData);
+									// await trx.run(generateNodeQueryStringFromParams(nodeType, nodeData), nodeData);
+								} catch (__) {}
+							});
+							await trx.commit();
+							await session.close();
+							enqueueSnackbar('Wifite cracked.json has been imported successfuly', { variant: 'success' });
+							handleCancel();
+							onDoneImporting();
+						} catch (e) {
+							enqueueSnackbar((e as Neo4jError).message, { variant: 'error' });
+						}
+					}
+				}
+				reader.readAsBinaryString(importFromWifiteCrackedFile);
+			}
+		}
+	}
+	const handleExportSubmit = (e: FormEvent) => {
+		e.preventDefault();
+		const serializedGraph = sigma.getGraph().export();
+		const dataToBeExported = {
+			nodes: JSON.parse(JSON.stringify(serializedGraph.nodes.map(node => _.assign({}, node.attributes, { type: undefined, label: undefined, x: undefined, y: undefined, image: undefined })))),
+			edges: JSON.parse(JSON.stringify(serializedGraph.edges.map(edge => _.assign({}, edge.attributes, { source: edge.source, target: edge.target })))),
+		}
+		window.files.saveFile(JSON.stringify(dataToBeExported));
+		enqueueSnackbar('Graph exported successfuly', { variant: 'success' });
+		handleCancel();
+	}
 	return (
 		<>
 			<Box className={classes.floatingActionsTop} display='grid' rowGap={2}>
 				<Tooltip placement='left' title='Settings'><Fab color='secondary' onClick={showSettings}><SettingsIcon /></Fab></Tooltip>
 				<Tooltip placement='left' title='Add a node'><Fab color='secondary' onClick={showAddNode}><AddIcon /></Fab></Tooltip>
 				<Tooltip placement='left' title='Refresh'><Fab color='secondary' onClick={() => sigma.refresh()}><RefreshIcon /></Fab></Tooltip>
+				<Tooltip placement='left' title='Import from...'><Fab color='secondary' onClick={() => setShowImportDialog(true)}><UploadFileIcon /></Fab></Tooltip>
+				<Tooltip placement='left' title='Export'><Fab color='secondary' onClick={() => setShowExportDialog(true)}><DownloadIcon /></Fab></Tooltip>
 			</Box>
 			<Box className={classes.floatingActionsBottom}>
 				<ButtonGroup orientation='vertical' color='secondary' variant='contained'>
@@ -329,13 +533,13 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 												<Grid item xs={3} sx={{ py: 2 }}>{propertyInfo.label}</Grid>
 												<Grid item xs={8}>
 													<TextField InputProps={{
-														endAdornment: propertyInfo.password ?
+														endAdornment: propertyInfo.password || propertyInfo.pin ?
 															<InputAdornment position='end'>
 																<IconButton onClick={() => { if (propertyInfo.toggleShowPassword) propertyInfo.toggleShowPassword(); }} edge='end'>
-																	{_.includes(showPasswordFields, propertyInfo.nodeId) ? <VisibilityOffIcon /> : <VisibilityIcon />}
+																	{(propertyInfo.password && _.includes(showPasswordFields, propertyInfo.nodeId)) || (propertyInfo.pin && _.includes(showPinFields, propertyInfo.nodeId)) ? <VisibilityOffIcon /> : <VisibilityIcon />}
 																</IconButton>
 															</InputAdornment> : ''
-													}} fullWidth value={propertyInfo.value} type={propertyInfo.password && !_.includes(showPasswordFields, propertyInfo.nodeId) ? 'password' : 'text'} />
+													}} fullWidth value={propertyInfo.value} type={(propertyInfo.password && !_.includes(showPasswordFields, propertyInfo.nodeId)) || (propertyInfo.pin && !_.includes(showPinFields, propertyInfo.nodeId)) ? 'password' : 'text'} />
 												</Grid>
 											</Grid>
 										</ListItem>)}
@@ -346,6 +550,53 @@ export const FloatingActions: FC<FloatingActionsProps> = ({ showAddNode, showSet
 					</Paper>
 				</Collapse>
 			</Box>
+			<Dialog open={showImportDialog} fullWidth maxWidth='md'>
+				<form onSubmit={handleImportSubmit}>
+					<DialogTitle>
+						Import from...
+						<Tabs value={tabIndex} onChange={(__, newValue) => setTabIndex(newValue)}>
+							<Tab value={0} label='Exported graph' />
+							<Tab value={1} label='Wifite cracked.json' />
+							<Tab value={2} label='Airodump-ng' />
+						</Tabs>
+					</DialogTitle>
+					<DialogContent>
+						{tabIndex === 0 && <Grid container spacing={2}>
+							<Grid item>
+								<Button variant='contained' component='label'>Choose a file<input accept='.json' onChange={e => setImportFromExportedGraphFile(e.target.files?.item(0) ?? null)} type='file' hidden /></Button>
+							</Grid>
+							<Grid item sx={{ flexGrow: 1 }}>
+								{importFromExportedGraphFile && <TextField fullWidth size='small' InputProps={{ readOnly: true }} value={importFromExportedGraphFile.path} />}
+							</Grid>
+						</Grid>}
+						{tabIndex === 1 && <Grid container spacing={2}>
+							<Grid item>
+								<Button variant='contained' component='label'>Choose a file<input accept='.json' onChange={e => setImportFromWifiteCrackedFile(e.target.files?.item(0) ?? null)} type='file' hidden /></Button>
+							</Grid>
+							<Grid item sx={{ flexGrow: 1 }}>
+								{importFromWifiteCrackedFile && <TextField fullWidth size='small' InputProps={{ readOnly: true }} value={importFromWifiteCrackedFile.path} />}
+							</Grid>
+						</Grid>}
+						{tabIndex === 2 && 'Coming soon...'}
+					</DialogContent>
+					<DialogActions>
+						<Button color='inherit' onClick={handleCancel}>Cancel</Button>
+						<Button type='submit' variant='contained' color='primary'>Import</Button>
+					</DialogActions>
+				</form>
+			</Dialog>
+			<Dialog open={showExportDialog} fullWidth maxWidth='md'>
+				<form onSubmit={handleExportSubmit}>
+					<DialogTitle>Export</DialogTitle>
+					<DialogContent>
+						You will be exporting ({sigma.getGraph().nodes().length}) nodes with ({sigma.getGraph().edges().length}) relations.
+					</DialogContent>
+					<DialogActions>
+						<Button color='inherit' onClick={handleCancel}>Cancel</Button>
+						<Button type='submit' variant='contained' color='primary'>Export</Button>
+					</DialogActions>
+				</form>
+			</Dialog>
 		</>
 	);
 }
