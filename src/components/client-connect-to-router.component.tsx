@@ -3,7 +3,6 @@ import { makeStyles } from "@mui/styles"
 import { Neo4jError, Session } from "neo4j-driver"
 import { useSnackbar } from "notistack"
 import { ChangeEvent, FC, FormEvent, useContext, useEffect, useState } from "react"
-import _ from 'lodash';
 import { appContext } from "../App"
 
 export type ClientConnectToRouterProps = {
