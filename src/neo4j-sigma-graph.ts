@@ -43,6 +43,7 @@ export class Neo4jSigmaGraph {
         data.essid = node.properties.essid;
         data.bssid = node.properties.bssid;
         data.password = node.properties.password;
+        data.pin = node.properties.pin;
         data.handshakes = node.properties.handshakes;
         break;
       case 'WIFIPROBE':
@@ -65,7 +66,7 @@ export class Neo4jSigmaGraph {
       case 'FLOOR':
         data.image = FloorSvgIcon;
         data.label = `Floor ${node.properties.number}`;
-        data.number = node.properties.number;
+        data.number = node.properties.number.low;
         break;
       case 'ROUTER':
         data.image = RouterSvgIcon;
