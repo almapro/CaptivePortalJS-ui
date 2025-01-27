@@ -449,7 +449,7 @@ export const DashboardView = () => {
 				setHoveredNodeLabel('');
 			},
 			clickNode: e => {
-				if (selectedNode && selectedNode !== e.node) {
+				if (selectedNode && selectedNode !== e.node && sigma.getGraph().hasNode(selectedNode)) {
 					sigma.getGraph().removeNodeAttribute(selectedNode, 'highlighted');
 				}
 				setSelectedNode(selectedNode === e.node ? null : e.node);
